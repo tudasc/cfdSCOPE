@@ -11,8 +11,7 @@ int main(int argc, char** argv) {
 
     // - Validierung
 
-    // - Visualisierung 
-    
+    // - Visualisierung
 
     return 0;
 }
