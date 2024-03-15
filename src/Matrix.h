@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <vector>
 
@@ -95,4 +96,16 @@ class SparseMatrix {
 };
 
 template <typename T>
-SparseMatrix<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {}
+SparseMatrix<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {
+    assert(A.getCols() == v.getSize() && "matVecMult: Dimension mismatch!");
+
+    Vector<T> res(A.getRows());
+
+    for (size_t i = 0; i < A.getRows(); i++) {
+        for (size_t j = 0; j < A.getCols(); j++) {
+            res[i] += A(i, j) * v[j];
+        }
+    }
+
+    return res;
+}
