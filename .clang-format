@@ -10,3 +10,4 @@ PointerAlignment: Left
 AlwaysBreakTemplateDeclarations: Yes
 InsertNewlineAtEOF: true
 IncludeBlocks: Preserve
+IndentAccessModifiers: false
