@@ -87,10 +87,10 @@ void write_to_file(const VelocityField<T>& velocities,
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
-                ofile << "," << pressures.getPressure(x, y, z) << ","
+                ofile <<  pressures.getPressure(x, y, z) << ","
                       << velocities.getLeftU(x, y, z) << ","
                       << velocities.getTopV(x, y, z) << ","
-                      << velocities.getFrontW(x, y, z);
+                      << velocities.getFrontW(x, y, z)<<"," ;
             }
             ofile << "\n";
         }
