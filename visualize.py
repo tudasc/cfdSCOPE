@@ -1,28 +1,47 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits import mplot3d
-from matplotlib import animation
-
 from matplotlib.animation import FuncAnimation, PillowWriter
+
+import argparse
+from tqdm import tqdm
 import scipy.interpolate
 
+# to show a progress bar during rendering
+progress_bar = None
 
-def show_3d_plot():
-    # 3D
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
 
+def progress_callback_func(current_frame: int, total_frames: int):
+    progress_bar.update(1)
+
+
+def get_2d_from_3d(x, y, z, u, v, w, slice_dim, slice_point):
+    # TODO actualy get a slice of the 3D input
+    x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+
+    u = -y / np.sqrt(x ** 2 + y ** 2)
+    v = x / np.sqrt(x ** 2 + y ** 2)
+    return x, y, u, v
+
+
+# TODO read input form file
+# TODO add arguments on the number of points to visualize
+
+def get_input_data_3d():
     x, y, z = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
 
     u = -y / np.sqrt(x ** 2 + y ** 2)
     v = x / np.sqrt(x ** 2 + y ** 2)
     w = np.zeros(shape=u.shape)
-
-    FRAMES = 50
-
-    data = get_plot_slices_3d(x, y, z, u, v, w,num_slices=FRAMES)
+    return x, y, z, u, v, w
 
 
+def show_3d_plot(x, y, z, u, v, w, frames, outfile):
+    # 3D
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    data = interpolate_movement_3d(x, y, z, u, v, w, num_slices=frames)
 
     def animate(i, plot_data):
         ax.clear()
@@ -34,15 +53,18 @@ def show_3d_plot():
 
         return q,
 
-    print("calculated interpolation, plotting data...")
+    print("Render Animation:")
+    global progress_bar
+    progress_bar = tqdm(total=frames)
 
-    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=FRAMES, fargs=[data])
-    ani.save("TLI.gif", dpi=300, writer=PillowWriter(fps=25))
-    print("3D plot")
-    exit()
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data])
+    ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
+
+    progress_bar.close()
+    progress_bar = None
 
 
-def get_plot_slices_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, movement_factor=0.1):
+def interpolate_movement_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, movement_factor=0.1):
     # Reshape u, v for interpolation
     u_known_reshaped = u.reshape(-1)
     v_known_reshaped = v.reshape(-1)
@@ -58,7 +80,8 @@ def get_plot_slices_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, movement
 
     result = []
     result.append((xx, yy, zz, uu, vv, ww))
-    for i in range(num_slices):
+    print("Interpolating movement:")
+    for i in tqdm(range(num_slices)):
         x_new = xx + uu * movement_factor
         y_new = yy + vv * movement_factor
         z_new = zz + ww * movement_factor
@@ -84,7 +107,7 @@ def get_plot_slices_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, movement
     return result
 
 
-def get_plot_slices(x, y, u, v, num_slices=100, slice_step=10, movement_factor=0.1):
+def interpolate_movement_2d(x, y, u, v, num_slices=100, slice_step=10, movement_factor=0.1):
     xx = x[0::slice_step, 0::slice_step]
     yy = y[0::slice_step, 0::slice_step]
     uu = u[0::slice_step, 0::slice_step]
@@ -92,7 +115,8 @@ def get_plot_slices(x, y, u, v, num_slices=100, slice_step=10, movement_factor=0
 
     result = []
     result.append((xx, yy, uu, vv))
-    for i in range(num_slices):
+    print("Interpolating movement:")
+    for i in tqdm(range(num_slices)):
         # Reshape u, v for interpolation
         u_known_reshaped = u.reshape(-1)
         v_known_reshaped = v.reshape(-1)
@@ -119,20 +143,33 @@ def get_plot_slices(x, y, u, v, num_slices=100, slice_step=10, movement_factor=0
 
 
 def main():
-    show_3d_plot()
+    parser = argparse.ArgumentParser("Plots Sample Data")
+    parser.add_argument("--two_d", action="store_true", help="Plot only 2D", required=False)
+    parser.add_argument("--slice_dim", default='z', choices=['x', 'y', 'z'], action="store",
+                        help="which dimension to slice in case of 2D plot", required=False)
+    parser.add_argument("--slice_point", type=int, default=0, action="store",
+                        help="where to slice dimension (given in grid Points)", required=False)
+    parser.add_argument("--frames", type=int, default=100, action="store", help="number of frames to plot",
+                        required=False)
+    parser.add_argument("--output", type=str, default="visu.gif", action="store", help="name of output file",
+                        required=False)
 
-    exit()
-    # full plot of all known forces
-    x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+    ARGS = parser.parse_args()
 
-    u = -y / np.sqrt(x ** 2 + y ** 2)
-    v = x / np.sqrt(x ** 2 + y ** 2)
+    x, y, z, u, v, w = get_input_data_3d()
 
-    # full plot
+    if ARGS.two_d:
+        x, y, u, v = get_2d_from_3d(x, y, z, u, v, w, ARGS.slice_dim, ARGS.slice_point)
+        plot_2d(x, y, u, v, ARGS.frames, ARGS.output)
+    else:
+        show_3d_plot(x, y, z, u, v, w, ARGS.frames, ARGS.output)
+
+    print("Visualization written to %s", ARGS.output)
+
+
+def plot_2d(x, y, u, v, frames, outfile):
+    data = interpolate_movement_2d(x, y, u, v, num_slices=frames)
     fig, ax = plt.subplots()
-    q = ax.quiver(x, y, u, v)
-    plt.show()
-    data = get_plot_slices(x, y, u, v)
 
     def animate(i, plot_data):
         ax.clear()
@@ -143,12 +180,15 @@ def main():
 
         return q,
 
-    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=100, fargs=[data])
-    ani.save("TLI.gif", dpi=300, writer=PillowWriter(fps=25))
+    print("Render Animation:")
+    global progress_bar
+    progress_bar = tqdm(total=frames)
 
-    print("")
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data])
+    ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
 
-    exit()
+    progress_bar.close()
+    progress_bar = None
 
 
 if __name__ == '__main__':
