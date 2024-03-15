@@ -1,24 +1,24 @@
-#include <cstddef>
-#include <string>
-#include <iostream>
-#include <fstream>
 #include <cassert>
-#include <string>
+#include <cstddef>
+#include <fstream>
+#include <iostream>
 #include <sstream>
+#include <string>
 
 #include "Grid.h"
 
-//TODO is usage of std::stod appropriate??
+// TODO is usage of std::stod appropriate??
 
-//TODO some exception checking for proper file format?
+// TODO some exception checking for proper file format?
 /**
- * 
- * @tparam T 
- * @param fname 
- * @return 
+ *
+ * @tparam T
+ * @param fname
+ * @return
  */
-template<typename T>
-std::pair<VelocityField<T>, PressureField<T>> read_from_file(std::string fname) {
+template <typename T>
+std::pair<VelocityField<T>, PressureField<T>>
+read_from_file(std::string fname) {
     std::ifstream ifile;
     ifile.open(fname);
     std::string line;
@@ -65,13 +65,14 @@ std::pair<VelocityField<T>, PressureField<T>> read_from_file(std::string fname) 
 }
 
 /**
- * 
- * @tparam T 
- * @param grid 
- * @param fname 
+ *
+ * @tparam T
+ * @param grid
+ * @param fname
  */
-template<typename T>
-void write_to_file(const VelocityField<T> &velocities, const PressureField<T> &pressures, std::string fname) {
+template <typename T>
+void write_to_file(const VelocityField<T>& velocities,
+                   const PressureField<T>& pressures, std::string fname) {
 
     assert(velocities.getDepth() == pressures.getDepth());
     assert(velocities.getHeight() == pressures.getHeight());
@@ -80,15 +81,16 @@ void write_to_file(const VelocityField<T> &velocities, const PressureField<T> &p
     std::ofstream ofile;
     ofile.open(fname);
 
-    ofile << velocities.getWidth() << "," << velocities.getHeight() << "," << velocities.getDepth() << ","
-          << velocities.getResolution() << "\n\n";
+    ofile << velocities.getWidth() << "," << velocities.getHeight() << ","
+          << velocities.getDepth() << "," << velocities.getResolution()
+          << "\n\n";
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
-                ofile << "," << pressures.getPressure(x, y, z)
-                      << "," << velocities.getLeftU(x, y, z)
-                      << "," << velocities.getTopV(x, y, z)
-                      << "," << velocities.getFrontW(x, y, z);
+                ofile << "," << pressures.getPressure(x, y, z) << ","
+                      << velocities.getLeftU(x, y, z) << ","
+                      << velocities.getTopV(x, y, z) << ","
+                      << velocities.getFrontW(x, y, z);
             }
             ofile << "\n";
         }
@@ -105,4 +107,4 @@ void write_to_file(const VelocityField<T> &velocities, const PressureField<T> &p
  * each line lists all field in x direction,
  * the lines are written in y direction
  * each z entry is seperated by blank lines between "y blocks"
-*/
+ */
