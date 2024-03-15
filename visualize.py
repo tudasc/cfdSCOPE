@@ -1,0 +1,195 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits import mplot3d
+from matplotlib.animation import FuncAnimation, PillowWriter
+
+import argparse
+from tqdm import tqdm
+import scipy.interpolate
+
+# to show a progress bar during rendering
+progress_bar = None
+
+
+def progress_callback_func(current_frame: int, total_frames: int):
+    progress_bar.update(1)
+
+
+def get_2d_from_3d(x, y, z, u, v, w, slice_dim, slice_point):
+    # TODO actualy get a slice of the 3D input
+    x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+
+    u = -y / np.sqrt(x ** 2 + y ** 2)
+    v = x / np.sqrt(x ** 2 + y ** 2)
+    return x, y, u, v
+
+
+# TODO read input form file
+# TODO add arguments on the number of points to visualize
+
+def get_input_data_3d():
+    x, y, z = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+
+    u = -y / np.sqrt(x ** 2 + y ** 2)
+    v = x / np.sqrt(x ** 2 + y ** 2)
+    w = np.zeros(shape=u.shape)
+    return x, y, z, u, v, w
+
+
+def show_3d_plot(x, y, z, u, v, w, frames, outfile):
+    # 3D
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    data = interpolate_movement_3d(x, y, z, u, v, w, num_slices=frames)
+
+    def animate(i, plot_data):
+        ax.clear()
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(-5, 5)
+        ax.set_zlim(-5, 5)
+        x, y, z, u, v, w = plot_data[i]
+        q = ax.quiver(x, y, z, u, v, w)
+
+        return q,
+
+    print("Render Animation:")
+    global progress_bar
+    progress_bar = tqdm(total=frames)
+
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data])
+    ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
+
+    progress_bar.close()
+    progress_bar = None
+
+
+def interpolate_movement_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, movement_factor=0.1):
+    # Reshape u, v for interpolation
+    u_known_reshaped = u.reshape(-1)
+    v_known_reshaped = v.reshape(-1)
+    w_known_reshaped = w.reshape(-1)
+    points = np.column_stack((x.ravel(), y.ravel(), z.ravel()))
+
+    xx = x[0::slice_step, 0::slice_step, 0::slice_step]
+    yy = y[0::slice_step, 0::slice_step, 0::slice_step]
+    zz = z[0::slice_step, 0::slice_step, 0::slice_step]
+    uu = u[0::slice_step, 0::slice_step, 0::slice_step]
+    vv = v[0::slice_step, 0::slice_step, 0::slice_step]
+    ww = v[0::slice_step, 0::slice_step, 0::slice_step]
+
+    result = []
+    result.append((xx, yy, zz, uu, vv, ww))
+    print("Interpolating movement:")
+    for i in tqdm(range(num_slices)):
+        x_new = xx + uu * movement_factor
+        y_new = yy + vv * movement_factor
+        z_new = zz + ww * movement_factor
+        new_points = np.column_stack((x_new.ravel(), y_new.ravel(), z_new.ravel()))
+        # Interpolate new x, y,z to find corresponding u, v,w
+        u_new = scipy.interpolate.griddata(points, u_known_reshaped, new_points, method='nearest')
+        v_new = scipy.interpolate.griddata(points, v_known_reshaped, new_points, method='nearest')
+        w_new = scipy.interpolate.griddata(points, w_known_reshaped, new_points, method='nearest')
+
+        # Reshape interpolated u, v
+        u_new = u_new.reshape(x_new.shape)
+        v_new = v_new.reshape(y_new.shape)
+        w_new = w_new.reshape(z_new.shape)
+
+        xx = x_new
+        yy = y_new
+        zz = z_new
+        uu = u_new
+        vv = v_new
+        ww = w_new
+        result.append((xx, yy, zz, uu, vv, ww))
+
+    return result
+
+
+def interpolate_movement_2d(x, y, u, v, num_slices=100, slice_step=10, movement_factor=0.1):
+    xx = x[0::slice_step, 0::slice_step]
+    yy = y[0::slice_step, 0::slice_step]
+    uu = u[0::slice_step, 0::slice_step]
+    vv = v[0::slice_step, 0::slice_step]
+
+    result = []
+    result.append((xx, yy, uu, vv))
+    print("Interpolating movement:")
+    for i in tqdm(range(num_slices)):
+        # Reshape u, v for interpolation
+        u_known_reshaped = u.reshape(-1)
+        v_known_reshaped = v.reshape(-1)
+        points = np.column_stack((x.ravel(), y.ravel()))
+
+        x_new = xx + uu * movement_factor
+        y_new = yy + vv * movement_factor
+        new_points = np.column_stack((x_new.ravel(), y_new.ravel()))
+        # Interpolate new x, y to find corresponding u, v
+        u_new = scipy.interpolate.griddata(points, u_known_reshaped, new_points, method='nearest')
+        v_new = scipy.interpolate.griddata(points, v_known_reshaped, new_points, method='nearest')
+
+        # Reshape interpolated u, v
+        u_new = u_new.reshape(x_new.shape)
+        v_new = v_new.reshape(y_new.shape)
+
+        xx = x_new
+        yy = y_new
+        uu = u_new
+        vv = v_new
+        result.append((xx, yy, uu, vv))
+
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser("Plots Sample Data")
+    parser.add_argument("--two_d", action="store_true", help="Plot only 2D", required=False)
+    parser.add_argument("--slice_dim", default='z', choices=['x', 'y', 'z'], action="store",
+                        help="which dimension to slice in case of 2D plot", required=False)
+    parser.add_argument("--slice_point", type=int, default=0, action="store",
+                        help="where to slice dimension (given in grid Points)", required=False)
+    parser.add_argument("--frames", type=int, default=100, action="store", help="number of frames to plot",
+                        required=False)
+    parser.add_argument("--output", type=str, default="visu.gif", action="store", help="name of output file",
+                        required=False)
+
+    ARGS = parser.parse_args()
+
+    x, y, z, u, v, w = get_input_data_3d()
+
+    if ARGS.two_d:
+        x, y, u, v = get_2d_from_3d(x, y, z, u, v, w, ARGS.slice_dim, ARGS.slice_point)
+        plot_2d(x, y, u, v, ARGS.frames, ARGS.output)
+    else:
+        show_3d_plot(x, y, z, u, v, w, ARGS.frames, ARGS.output)
+
+    print("Visualization written to %s", ARGS.output)
+
+
+def plot_2d(x, y, u, v, frames, outfile):
+    data = interpolate_movement_2d(x, y, u, v, num_slices=frames)
+    fig, ax = plt.subplots()
+
+    def animate(i, plot_data):
+        ax.clear()
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(-5, 5)
+        x, y, u, v = plot_data[i]
+        q = ax.quiver(x, y, u, v, np.linalg.norm((v, u)))
+
+        return q,
+
+    print("Render Animation:")
+    global progress_bar
+    progress_bar = tqdm(total=frames)
+
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data])
+    ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
+
+    progress_bar.close()
+    progress_bar = None
+
+
+if __name__ == '__main__':
+    main()
