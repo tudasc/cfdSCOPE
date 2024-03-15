@@ -1,5 +1,6 @@
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <tuple>
 #include <utility>
@@ -39,4 +40,14 @@ T dot(const Vector<T>& u, const Vector<T>& v) {
 
     return res;
 }
- 
+
+template <typename T>
+T norm(const Vector<T> vec) {
+    T res = 0.0;
+
+    for (size_t i = 0; i < vec.getSize(); i++) {
+        res += vec[i] * vec[i];
+    }
+
+    return std::sqrt(res);
+}
