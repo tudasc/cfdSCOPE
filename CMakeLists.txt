@@ -11,3 +11,5 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(minicfd
     src/MiniCFD.cpp
 )
+
+add_subdirectory(tests)
