@@ -1,7 +1,7 @@
 #include "Vector.h"
 
 // "indexing helper"
-template <typename T>
+template<typename T>
 class Grid {
     size_t width;
     size_t height;
@@ -12,9 +12,9 @@ class Grid {
     // Vector<T> p;
     // Vector<T> v;
 
-  public:
-    Grid(size_t width, size_t height,size_t depth, T resolution)
-        : width(width), height(height), depth(depth), resolution(resolution) {}
+public:
+    Grid(size_t width, size_t height, size_t depth, T resolution)
+            : width(width), height(height), depth(depth), resolution(resolution) {}
 
     size_t getWidth() const { return width; }
 
@@ -29,17 +29,22 @@ class Grid {
     size_t getCellCount() const { return width * height * depth; }
 };
 
-template <typename T>
+template<typename T>
 class PressureField {
-    Grid<T>& grid;
+    Grid<T> &grid;
     Vector<T> field;
 
-  public:
-    PressureField(Grid<T>& grid) : grid(grid), field(grid.getCellCount()) {}
+public:
+    PressureField(Grid<T> &grid) : grid(grid), field(grid.getCellCount()) {}
 
-    T& getPressure(size_t x, size_t y, size_t z) {
+    T &getPressure(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z)];
     }
+
+    void setPressure(size_t x, size_t y, size_t z, const T &val) {
+        field[grid.cellIndex(x, y, z)] = val;
+    }
+
     size_t getWidth() const { return grid.getWidth(); }
 
     size_t getHeight() const { return grid.getHeight(); }
@@ -49,42 +54,69 @@ class PressureField {
     Vec3<T> div(size_t x, size_t y) const {}
 };
 
-template <typename T>
+template<typename T>
 class VelocityField {
-    Grid<T>& grid;
+    Grid<T> &grid;
     Vector<T> field;
 
-  public:
-    VelocityField(Grid<T>& grid) : grid(grid), field(grid.getCellCount()) {}
+public:
+    VelocityField(Grid<T> &grid) : grid(grid), field(grid.getCellCount()) {}
 
     /**
      *
      */
-    T& getLeftU(size_t x, size_t y, size_t z) {
+    T &getLeftU(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z) * 3];
     }
 
-    T& getRightU(size_t x, size_t y, size_t z) {
+    T &getRightU(size_t x, size_t y, size_t z) const {
         assert(x + 1 < grid.getWidth() && "x out of bounds");
         return field[grid.cellIndex(x + 1, y, z) * 3];
     }
 
-    T& getTopV(size_t x, size_t y, size_t z) {
+    T &getTopV(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z) * 3];
     }
 
-    T& getBottomV(size_t x, size_t y, size_t z) {
+    T &getBottomV(size_t x, size_t y, size_t z) const {
         assert(y + 1 < grid.getHeight() && "y out of bounds");
         return field[grid.cellIndex(x, y + 1, z) * 3];
     }
 
-    T& getFrontW(size_t x, size_t y, size_t z) {
+    T &getFrontW(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z) * 3];
     }
 
-    T& getBackW(size_t x, size_t y, size_t z) {
+    T &getBackW(size_t x, size_t y, size_t z) const {
         assert(z + 1 < grid.getDepth() && "z out of bounds");
         return field[grid.cellIndex(x, y, z + 1) * 3];
+    }
+
+    void setLeftU(size_t x, size_t y, size_t z, const T &value) {
+        field[grid.cellIndex(x, y, z) * 3] = value;
+    }
+
+    void setRightU(size_t x, size_t y, size_t z, const T &value) {
+        assert(x + 1 < grid.getWidth() && "x out of bounds");
+        field[grid.cellIndex(x + 1, y, z) * 3] = value;
+    }
+
+    void setTopV(size_t x, size_t y, size_t z, const T &value) {
+        field[grid.cellIndex(x, y, z) * 3] = value;
+    }
+
+    void setBottomV(size_t x, size_t y, size_t z, const T &value) {
+        assert(y + 1 < grid.getHeight() && "y out of bounds");
+        field[grid.cellIndex(x, y + 1, z) * 3] = value;
+    }
+
+    void setFrontW(size_t x, size_t y, size_t z, const T &value) {
+        field[grid.cellIndex(x, y, z) * 3] = value;
+    }
+
+    void setBackW(size_t x, size_t y, size_t z, const T &value) {
+        assert(z + 1 < grid.getDepth() && "z out of bounds");
+        field[grid.cellIndex(x, y, z + 1) * 3] = value;
     }
 
     size_t getWidth() const { return grid.getWidth(); }
