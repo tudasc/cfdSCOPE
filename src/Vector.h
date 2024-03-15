@@ -14,6 +14,9 @@ struct Vec3 {
     T x, y, z;
 };
 
+/**
+    Vector type
+*/
 template <typename T>
 class Vector {
   public:
@@ -27,6 +30,9 @@ class Vector {
     std::vector<T> _data;
 };
 
+/**
+    Vector-vector dot product
+*/
 template <typename T>
 T dot(const Vector<T>& u, const Vector<T>& v) {
     assert(u.getSize() == v.getSize() &&
@@ -41,6 +47,9 @@ T dot(const Vector<T>& u, const Vector<T>& v) {
     return res;
 }
 
+/**
+    Euclidean vector norm
+*/
 template <typename T>
 T norm(const Vector<T> vec) {
     T res = 0.0;

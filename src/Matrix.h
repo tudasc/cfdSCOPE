@@ -5,6 +5,9 @@
 
 #include "Vector.h"
 
+/**
+    Data type representing one entry in the sparse matrix
+*/
 template <typename T>
 class SparseMatrixEntry {
     size_t row;
@@ -21,11 +24,15 @@ template <typename T>
 class SparseMatrix {
 
   public:
+    /**
+        Constructor to build sparse matrix from a vector of entries
+    */
     SparseMatrix(size_t rows, size_t cols,
                  std::vector<SparseMatrixEntry<T>> entries)
         : _rows(rows), _cols(cols), _v(entries.size()),
           _colIndex(entries.size()), _rowIndex(rows + 1) {
 
+        // sort matrix entries for easier construction
         std::sort(entries.begin(), entries.end(),
                   [](SparseMatrixEntry<T> a, SparseMatrixEntry<T> b) {
                       if (a.row != b.row)
@@ -34,6 +41,7 @@ class SparseMatrix {
                           return a.col > b.col;
                   });
 
+        // iterate over entries and put it in the data structure by adjusting the CSR-arrays
         size_t lastRow = 0;
         for (size_t i = 0; i < entries.size(); i++) {
             SparseMatrixEntry<T>& entry = entries[i];
@@ -62,6 +70,9 @@ class SparseMatrix {
         _rowIndex[rows] = entries.size();
     }
 
+    /**
+        Matrix access operator
+    */
     const T& operator()(size_t r, size_t c) {
         assert((r >= 0 && r < _rows && c >= 0 && c < _cols) &&
                "Out-of-bounds access!");
@@ -95,6 +106,9 @@ class SparseMatrix {
     Vector<size_t> _rowIndex;
 };
 
+/**
+    Matrix-vector product
+*/
 template <typename T>
 SparseMatrix<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {
     assert(A.getCols() == v.getSize() && "matVecMult: Dimension mismatch!");
