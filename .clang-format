@@ -9,3 +9,5 @@ PointerAlignment: Left
 # Misc
 AlwaysBreakTemplateDeclarations: Yes
 InsertNewlineAtEOF: true
+IncludeBlocks: Preserve
+IndentAccessModifiers: false
