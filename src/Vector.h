@@ -24,6 +24,8 @@ class Vector {
 
     T& operator[](size_t i) { return _data[i]; }
 
+    const T& operator[](size_t i) const { return _data[i]; }
+
     size_t getSize() const { return _data.size(); }
 
   private:
