@@ -134,7 +134,7 @@ def main():
         ax.set_xlim(-5, 5)
         ax.set_ylim(-5, 5)
         x, y, u, v = plot_data[i]
-        q = ax.quiver(x, y, u, v)
+        q = ax.quiver(x, y, u, v,np.linalg.norm((v, u)))
 
         return q,
 
