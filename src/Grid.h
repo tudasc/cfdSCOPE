@@ -26,6 +26,10 @@ public:
         return z * width * height + y * height + x;
     }
 
+    T getResolution() const {
+        return resolution;
+    }
+
     size_t getCellCount() const { return width * height * depth; }
 };
 
@@ -37,7 +41,7 @@ class PressureField {
 public:
     PressureField(Grid<T> &grid) : grid(grid), field(grid.getCellCount()) {}
 
-    T &getPressure(size_t x, size_t y, size_t z) const {
+    const T &getPressure(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z)];
     }
 
@@ -50,6 +54,10 @@ public:
     size_t getHeight() const { return grid.getHeight(); }
 
     size_t getDepth() const { return grid.getDepth(); }
+
+    T getResolution() const {
+        return grid.getResolution();
+    }
 
     Vec3<T> div(size_t x, size_t y) const {}
 };
@@ -65,29 +73,29 @@ public:
     /**
      *
      */
-    T &getLeftU(size_t x, size_t y, size_t z) const {
+    const T &getLeftU(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z) * 3];
     }
 
-    T &getRightU(size_t x, size_t y, size_t z) const {
+    const T &getRightU(size_t x, size_t y, size_t z) const {
         assert(x + 1 < grid.getWidth() && "x out of bounds");
         return field[grid.cellIndex(x + 1, y, z) * 3];
     }
 
-    T &getTopV(size_t x, size_t y, size_t z) const {
+    const T &getTopV(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z) * 3];
     }
 
-    T &getBottomV(size_t x, size_t y, size_t z) const {
+    const T &getBottomV(size_t x, size_t y, size_t z) const {
         assert(y + 1 < grid.getHeight() && "y out of bounds");
         return field[grid.cellIndex(x, y + 1, z) * 3];
     }
 
-    T &getFrontW(size_t x, size_t y, size_t z) const {
+    const  T &getFrontW(size_t x, size_t y, size_t z) const {
         return field[grid.cellIndex(x, y, z) * 3];
     }
 
-    T &getBackW(size_t x, size_t y, size_t z) const {
+    const T &getBackW(size_t x, size_t y, size_t z) const {
         assert(z + 1 < grid.getDepth() && "z out of bounds");
         return field[grid.cellIndex(x, y, z + 1) * 3];
     }
@@ -124,6 +132,10 @@ public:
     size_t getHeight() const { return grid.getHeight(); }
 
     size_t getDepth() const { return grid.getDepth(); }
+
+    T getResolution() const {
+        return grid.getResolution();
+    }
 
     /**
      * Divergence operator using central difference.

@@ -32,28 +32,29 @@ std::pair<VelocityField<T>, PressureField<T>> read_from_file(std::string fname) 
     std::getline(ifile, line, '\n');
     T resolution = std::stod(line);
 
-    Grid<T> grid(width, height, depth,resolution);
+    Grid<T> grid(width, height, depth, resolution);
     PressureField<T> pressures(grid);
     VelocityField<T> velocities(grid);
 
-    for (size_t z = 0; z < velocities.getDepth(); ++z) {
+    for (size_t z = 0; z < grid.getDepth(); ++z) {
         std::getline(ifile, line, '\n');
         assert(line == "");
-        for (size_t y = 0; y < velocities.getHeight(); ++y) {
+        for (size_t y = 0; y < grid.getHeight(); ++y) {
             std::getline(ifile, line, '\n');
             std::istringstream line_stream(line);
-            for (size_t x = 0; x < velocities.getWidth(); ++x) {
-                std::getline(line_stream, line, ',');
-                T p = std::stod(line);
+            std::string val;
+            for (size_t x = 0; x < grid.getWidth(); ++x) {
+                std::getline(line_stream, val, ',');
+                T p = std::stod(val);
                 pressures.setPressure(x, y, z, p);
-                std::getline(line_stream, line, ',');
-                T u = std::stod(line);
+                std::getline(line_stream, val, ',');
+                T u = std::stod(val);
                 velocities.setLeftU(x, y, z, u);
-                std::getline(line_stream, line, ',');
-                T v = std::stod(line);
+                std::getline(line_stream, val, ',');
+                T v = std::stod(val);
                 velocities.setTopV(x, y, z, v);
-                std::getline(line_stream, line, ',');
-                T w = std::stod(line);
+                std::getline(line_stream, val, ',');
+                T w = std::stod(val);
                 velocities.setFrontW(x, y, z, w);
             }
         }
@@ -79,7 +80,8 @@ void write_to_file(const VelocityField<T> &velocities, const PressureField<T> &p
     std::ofstream ofile;
     ofile.open(fname);
 
-    ofile << velocities.getWidth() << "," << velocities.getHeight() << "," << velocities.getDepth() << "\n\n";
+    ofile << velocities.getWidth() << "," << velocities.getHeight() << "," << velocities.getDepth() << ","
+          << velocities.getResolution() << "\n\n";
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
