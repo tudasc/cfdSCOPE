@@ -6,6 +6,11 @@ template <typename T>
 using Vec2 = std::pair<T, T>;
 
 template <typename T>
+struct Vec3 {
+    T x, y, z;
+}
+
+template <typename T>
 class Vector {
     size_t size;
 
