@@ -4,9 +4,13 @@
 #include <fstream>
 #include <cassert>
 #include <string>
+#include <sstream>
 
 #include "Grid.h"
 
+//TODO is usage of std::stod appropriate??
+
+//TODO some exception checking for proper file format?
 /**
  * 
  * @tparam T 
@@ -23,10 +27,12 @@ std::pair<VelocityField<T>, PressureField<T>> read_from_file(std::string fname) 
     size_t width = std::stoi(line);
     std::getline(ifile, line, ',');
     size_t height = std::stoi(line);
-    std::getline(ifile, line, '\n');
+    std::getline(ifile, line, ',');
     size_t depth = std::stoi(line);
+    std::getline(ifile, line, '\n');
+    T resolution = std::stod(line);
 
-    Grid<T> grid(width, height, depth);
+    Grid<T> grid(width, height, depth,resolution);
     PressureField<T> pressures(grid);
     VelocityField<T> velocities(grid);
 
@@ -35,7 +41,7 @@ std::pair<VelocityField<T>, PressureField<T>> read_from_file(std::string fname) 
         assert(line == "");
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             std::getline(ifile, line, '\n');
-            std::stringstream line_stream(line);
+            std::istringstream line_stream(line);
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
                 std::getline(line_stream, line, ',');
                 T p = std::stod(line);
@@ -90,7 +96,7 @@ void write_to_file(const VelocityField<T> &velocities, const PressureField<T> &p
 }
 
 /* Documentation of output file:
- * First line: grid dimensions.
+ * First line: grid dimensions followed by resolution
  * Followed By:
  * Comma seperated list of values
  * For each field:pressure, x,y,z velocities
