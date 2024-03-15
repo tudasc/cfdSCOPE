@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <initializer_list>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -23,9 +24,9 @@ template <typename T>
 class Vector {
   public:
     Vector(size_t size) : _data(size, 0.0) {}
+    Vector(std::initializer_list<T> l) : _data(l) {}
 
     T& operator[](size_t i) { return _data[i]; }
-
     const T& operator[](size_t i) const { return _data[i]; }
 
     size_t getSize() const { return _data.size(); }
