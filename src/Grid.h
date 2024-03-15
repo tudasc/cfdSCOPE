@@ -41,7 +41,8 @@ class PressureField {
     Vector<T> field;
 
   public:
-    PressureField(std::shared_ptr<Grid<T>>grid) : grid(grid), field(grid->getCellCount()) {}
+    PressureField(std::shared_ptr<Grid<T>> grid)
+        : grid(grid), field(grid->getCellCount()) {}
 
     const T& getPressure(size_t x, size_t y, size_t z) const {
         return field[grid->cellIndex(x, y, z)];
@@ -68,7 +69,8 @@ class VelocityField {
     Vector<T> field;
 
   public:
-    VelocityField(std::shared_ptr<Grid<T>> grid) : grid(grid), field(grid->getCellCount() * 3) {}
+    VelocityField(std::shared_ptr<Grid<T>> grid)
+        : grid(grid), field(grid->getCellCount() * 3) {}
 
     /**
      *

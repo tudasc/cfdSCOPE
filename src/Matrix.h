@@ -44,7 +44,8 @@ class SparseMatrix {
                           return a.col < b.col;
                   });
 
-        // iterate over entries and put it in the data structure by adjusting the CSR-arrays
+        // iterate over entries and put it in the data structure by adjusting
+        // the CSR-arrays
         size_t lastRow = 0;
         for (size_t i = 0; i < entries.size(); i++) {
             SparseMatrixEntry<T>& entry = entries[i];
