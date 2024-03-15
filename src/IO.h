@@ -32,18 +32,18 @@ read_from_file(std::string fname) {
     std::getline(ifile, line, '\n');
     T resolution = std::stod(line);
 
-    Grid<T> grid(width, height, depth, resolution);
+    auto grid = std::make_shared<Grid<T>>(width, height, depth, resolution);
     PressureField<T> pressures(grid);
     VelocityField<T> velocities(grid);
 
-    for (size_t z = 0; z < grid.getDepth(); ++z) {
+    for (size_t z = 0; z < grid->getDepth(); ++z) {
         std::getline(ifile, line, '\n');
         assert(line == "");
-        for (size_t y = 0; y < grid.getHeight(); ++y) {
+        for (size_t y = 0; y < grid->getHeight(); ++y) {
             std::getline(ifile, line, '\n');
             std::istringstream line_stream(line);
             std::string val;
-            for (size_t x = 0; x < grid.getWidth(); ++x) {
+            for (size_t x = 0; x < grid->getWidth(); ++x) {
                 std::getline(line_stream, val, ',');
                 T p = std::stod(val);
                 pressures.setPressure(x, y, z, p);
