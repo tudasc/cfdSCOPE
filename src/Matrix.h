@@ -12,7 +12,7 @@
     Data type representing one entry in the sparse matrix
 */
 template <typename T>
-class SparseMatrixEntry {
+struct SparseMatrixEntry {
     size_t row;
     size_t col;
     T value;
@@ -39,9 +39,9 @@ class SparseMatrix {
         std::sort(entries.begin(), entries.end(),
                   [](SparseMatrixEntry<T> a, SparseMatrixEntry<T> b) {
                       if (a.row != b.row)
-                          return a.row > b.row;
+                          return a.row < b.row;
                       else
-                          return a.col > b.col;
+                          return a.col < b.col;
                   });
 
         // iterate over entries and put it in the data structure by adjusting the CSR-arrays
@@ -51,7 +51,7 @@ class SparseMatrix {
 
             assert(entry.value != 0.0 && "By definition, a sparse matrix only "
                                          "contains non-zero elements.");
-            assert((entry.row >= 0 && entry.row < _rows && entry.col >= _rows &&
+            assert((entry.row >= 0 && entry.row < _rows && entry.col >= 0 &&
                     entry.col < _cols) &&
                    "Out-of-bounds sparse-matrix element!");
 
@@ -62,7 +62,7 @@ class SparseMatrix {
             if (entry.row > lastRow) {
                 // set row index of new row (and all possibly skipped rows) to
                 // the current index
-                for (size_t j = lastRow; j <= entry.row; j++) {
+                for (size_t j = lastRow + 1; j <= entry.row; j++) {
                     _rowIndex[j] = i;
                 }
 
@@ -76,7 +76,7 @@ class SparseMatrix {
     /**
         Matrix access operator
     */
-    const T& operator()(size_t r, size_t c) {
+    const T& operator()(size_t r, size_t c) const {
         assert((r >= 0 && r < _rows && c >= 0 && c < _cols) &&
                "Out-of-bounds access!");
 
@@ -89,9 +89,9 @@ class SparseMatrix {
             if (_colIndex[i] == c)
                 return _v[i];
             if (_colIndex[i] > c)
-                return 0.0;
+                return _zero;
         }
-        return 0.0;
+        return _zero;
     }
 
     size_t getCols() const { return _cols; }
@@ -107,13 +107,17 @@ class SparseMatrix {
     Vector<T> _v;
     Vector<size_t> _colIndex;
     Vector<size_t> _rowIndex;
+
+    // zero entry
+    // we need this as a 0.0 in memery which we can return a const reference
+    const T _zero = 0.0;
 };
 
 /**
     Matrix-vector product
 */
 template <typename T>
-SparseMatrix<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {
+Vector<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {
     assert(A.getCols() == v.getSize() && "matVecMult: Dimension mismatch!");
 
     Vector<T> res(A.getRows());
