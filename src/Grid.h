@@ -60,7 +60,7 @@ class VelocityField {
     Vector<T> field;
 
 public:
-    VelocityField(Grid<T> &grid) : grid(grid), field(grid.getCellCount()) {}
+    VelocityField(Grid<T> &grid) : grid(grid), field(grid.getCellCount() * 3) {}
 
     /**
      *
