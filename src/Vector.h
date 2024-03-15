@@ -1,3 +1,5 @@
+#ifndef VECTOR_H
+#define VECTOR_H
 
 #include <cassert>
 #include <cmath>
@@ -60,3 +62,5 @@ T norm(const Vector<T> vec) {
 
     return std::sqrt(res);
 }
+
+#endif

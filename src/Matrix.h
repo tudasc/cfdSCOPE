@@ -1,3 +1,6 @@
+#ifndef MATRIX_H
+#define MATRIX_H
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -123,3 +126,5 @@ SparseMatrix<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {
 
     return res;
 }
+
+#endif

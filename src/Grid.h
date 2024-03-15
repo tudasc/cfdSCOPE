@@ -1,3 +1,6 @@
+#ifndef GRID_H
+#define GRID_H
+
 #include "Vector.h"
 
 // "indexing helper"
@@ -91,3 +94,5 @@ class VelocityField {
                getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z);
     }
 };
+
+#endif
