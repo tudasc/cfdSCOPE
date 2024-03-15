@@ -40,6 +40,11 @@ class PressureField {
     T& getPressure(size_t x, size_t y, size_t z) {
         return field[grid.cellIndex(x, y, z)];
     }
+    size_t getWidth() const { return grid.getWidth(); }
+
+    size_t getHeight() const { return grid.getHeight(); }
+
+    size_t getDepth() const { return grid.getDepth(); }
 
     Vec3<T> div(size_t x, size_t y) const {}
 };
@@ -81,6 +86,12 @@ class VelocityField {
         assert(z + 1 < grid.getDepth() && "z out of bounds");
         return field[grid.cellIndex(x, y, z + 1) * 3];
     }
+
+    size_t getWidth() const { return grid.getWidth(); }
+
+    size_t getHeight() const { return grid.getHeight(); }
+
+    size_t getDepth() const { return grid.getDepth(); }
 
     /**
      * Divergence operator using central difference.
