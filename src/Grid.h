@@ -13,7 +13,7 @@ class Grid {
     // Vector<T> v;
 
   public:
-    Grid(size_t width, size_t height, T resolution)
+    Grid(size_t width, size_t height,size_t depth, T resolution)
         : width(width), height(height), depth(depth), resolution(resolution) {}
 
     size_t getWidth() const { return width; }
