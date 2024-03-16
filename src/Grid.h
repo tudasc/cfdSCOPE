@@ -4,6 +4,18 @@
 #include "Vector.h"
 #include <memory>
 
+/**
+* TODO: Implement.
+* For Cavity problem: Dirichlet boundary condiditions for velocity, Neumann for pressure.
+*/
+class BoundaryCondition {
+public:
+    enum Type {
+        DIRICHLET, NEUMANN
+    };
+
+};
+
 // "indexing helper"
 template <typename T>
 class Grid {
@@ -11,14 +23,14 @@ class Grid {
     size_t height;
     size_t depth;
 
-    T resolution;
+    T cellSize;
 
     // Vector<T> p;
     // Vector<T> v;
 
   public:
-    Grid(size_t width, size_t height, size_t depth, T resolution)
-        : width(width), height(height), depth(depth), resolution(resolution) {}
+    Grid(size_t width, size_t height, size_t depth, T cellSize)
+        : width(width), height(height), depth(depth), cellSize(cellSize) {}
 
     size_t getWidth() const { return width; }
 
@@ -30,9 +42,11 @@ class Grid {
         return z * width * height + y * height + x;
     }
 
-    T getResolution() const { return resolution; }
-
     size_t getCellCount() const { return width * height * depth; }
+
+    T getCellSize() const {
+        return cellSize;
+    }
 };
 
 template <typename T>
@@ -58,7 +72,7 @@ class PressureField {
 
     size_t getDepth() const { return grid->getDepth(); }
 
-    T getResolution() const { return grid->getResolution(); }
+    T getCellSize() const { return grid->getCellSize(); }
 
     Vec3<T> div(size_t x, size_t y) const {}
 };
@@ -135,16 +149,18 @@ class VelocityField {
 
     size_t getDepth() const { return grid->getDepth(); }
 
-    T getResolution() const { return grid->getResolution(); }
+    T getCellSize() const { return grid->getCellSize(); }
 
     /**
      * Divergence operator using central difference.
      */
     T div(size_t x, size_t y, size_t z) const {
-
-        return getRightU(x, y, z) - getLeftU(x, y, z) + getBottomV(x, y, z) -
-               getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z);
+        // TODO: Boundary conditions
+        return (getRightU(x, y, z) - getLeftU(x, y, z) + getBottomV(x, y, z) -
+               getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z)) / grid.getCellSize();
     }
+
 };
+
 
 #endif
