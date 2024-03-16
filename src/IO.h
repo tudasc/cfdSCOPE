@@ -82,7 +82,7 @@ void write_to_file(const VelocityField<T>& velocities,
     ofile.open(fname);
 
     ofile << velocities.getWidth() << "," << velocities.getHeight() << ","
-          << velocities.getDepth() << "," << velocities.getResolution()
+          << velocities.getDepth() << "," << velocities.getCellSize()
           << "\n\n";
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
