@@ -99,6 +99,27 @@ class SparseMatrix {
 
     size_t getRows() const { return _rows; }
 
+    /**
+        (Sparse-) matrix-vector product
+    */
+    Vector<T> spmv(const Vector<T>& vec) const {
+        assert(_cols == vec.getSize() && "SpMV: Dimension mismatch!");
+
+        Vector<T> res(_rows);
+
+        for (size_t i = 0; i < _rows; i++) {
+            T acc = 0.0;
+
+            for (size_t j = _rowIndex[i]; j < _rowIndex[i + 1]; j++) {
+                acc += _v[j] * vec[_colIndex[j]];
+            }
+
+            res[i] = acc;
+        }
+
+        return res;
+    }
+
   private:
     // dimensions
     size_t _rows;
@@ -113,23 +134,5 @@ class SparseMatrix {
     // we need this as a 0.0 in memery which we can return a const reference
     const T _zero = 0.0;
 };
-
-/**
-    Matrix-vector product
-*/
-template <typename T>
-Vector<T> matVecMult(const SparseMatrix<T>& A, const Vector<T>& v) {
-    assert(A.getCols() == v.getSize() && "matVecMult: Dimension mismatch!");
-
-    Vector<T> res(A.getRows());
-
-    for (size_t i = 0; i < A.getRows(); i++) {
-        for (size_t j = 0; j < A.getCols(); j++) {
-            res[i] += A(i, j) * v[j];
-        }
-    }
-
-    return res;
-}
 
 #endif
