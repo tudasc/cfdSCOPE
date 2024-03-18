@@ -56,15 +56,51 @@ TEST(LinalgBasicsTest, MatrixBasics) {
     ASSERT_FLOAT_EQ(m(1, 1), 4.0);
 }
 
-TEST(LinalgBasicsTest, MatrixVectorProduct) {
+TEST(LinalgBasicsTest, MatrixVectorProductBasics) {
     std::vector<SparseMatrixEntry<float>> entries = {
         {0, 0, 1.0}, {0, 1, 2.0}, {1, 0, 3.0}, {1, 1, 4.0}};
 
     SparseMatrix<float> m(2, 2, entries);
     Vector<float> a = {1.0, 2.0};
-    Vector<float> product = matVecMult(m, a);
+    Vector<float> product = m.spmv(a);
 
     ASSERT_EQ(product.getSize(), m.getRows());
     ASSERT_FLOAT_EQ(product[0], 5.0);
     ASSERT_FLOAT_EQ(product[1], 11.0);
 }
+
+TEST(LinalgBasicsTest, MatrixVectorProductIdentity) {
+    std::vector<SparseMatrixEntry<float>> entries = {{0, 0, 1.0}, {1, 1, 1.0}};
+
+    SparseMatrix<float> identity(2, 2, entries);
+    Vector<float> a = {42.0, 3.14159};
+    Vector<float> product = identity.spmv(a);
+
+    ASSERT_FLOAT_EQ(product[0], 42.0);
+    ASSERT_FLOAT_EQ(product[1], 3.14159);
+}
+
+TEST(LinalgBasicsTest, MatrixVectorProductEmpty) {
+    std::vector<SparseMatrixEntry<float>> entries = {};
+
+    SparseMatrix<float> identity(2, 2, entries);
+    Vector<float> a = {42.0, 3.14159};
+    Vector<float> product = identity.spmv(a);
+
+    ASSERT_FLOAT_EQ(product[0], 0.0);
+    ASSERT_FLOAT_EQ(product[1], 0.0);
+}
+
+TEST(LinalgBasicsTest, MatrixVectorProductEmptyRows) {
+    std::vector<SparseMatrixEntry<float>> entries = {
+        {1, 1, 1.0},
+    };
+
+    SparseMatrix<float> identity(2, 2, entries);
+    Vector<float> a = {42.0, 3.14159};
+    Vector<float> product = identity.spmv(a);
+
+    ASSERT_FLOAT_EQ(product[0], 0.0);
+    ASSERT_FLOAT_EQ(product[1], 3.14159);
+}
+ 
