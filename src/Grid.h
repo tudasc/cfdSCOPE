@@ -49,6 +49,33 @@ class Grid {
     }
 };
 
+// template <typename T>
+// class Field {
+//     std::shared_ptr<Grid<T>> grid;
+//     Vector<T> field;
+// public:
+//     Field(std::shared_ptr<Grid<T>> grid)
+//         : grid(grid), field(grid->getCellCount()) {}
+
+//     const T& getPressure(size_t x, size_t y, size_t z) const {
+//         return field[grid->cellIndex(x, y, z)];
+//     }
+
+//     void setPressure(size_t x, size_t y, size_t z, const T& val) {
+//         field[grid->cellIndex(x, y, z)] = val;
+//     }
+
+//     size_t getWidth() const { return grid->getWidth(); }
+
+//     size_t getHeight() const { return grid->getHeight(); }
+
+//     size_t getDepth() const { return grid->getDepth(); }
+
+//     T getCellSize() const { return grid->getCellSize(); }
+
+//     Vec3<T> div(size_t x, size_t y) const {}
+// }
+
 template <typename T>
 class PressureField {
     std::shared_ptr<Grid<T>> grid;
@@ -74,7 +101,26 @@ class PressureField {
 
     T getCellSize() const { return grid->getCellSize(); }
 
+    size_t getNumValues() const {
+        return field.getSize();
+    }
+
+    Vector<T>& getRawValues() {
+        return field;
+    }
+
+    std::shared_ptr<Grid<T>> getGrid() const {
+        return grid;
+    }
+
     Vec3<T> div(size_t x, size_t y) const {}
+
+    Vec3<T> laplace(size_t x, size_t y, size_t z) const {
+        return (getPressure(x+1, y, z) + getPressure(x, y+1, z) + getPressure(x, y, z+1) 
+        - 6 * getPressure(x, y, z) 
+        + getPressure(x-1, y, z) + getPressure(x, y-1, z) + getPressure(x, y, z-1)) /
+         (grid->getCellSize() * grid->getCellSize());   
+    }
 };
 
 template <typename T>
@@ -85,6 +131,15 @@ class VelocityField {
   public:
     VelocityField(std::shared_ptr<Grid<T>> grid)
         : grid(grid), field(grid->getCellCount() * 3) {}
+
+    VelocityField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
+        : grid(grid) {
+        if (values.getSize() != grid->getCellCount() * 3) {
+            // TODO: Error handling
+        }
+        field = std::move(values);
+    }
+
 
     /**
      *
@@ -151,6 +206,18 @@ class VelocityField {
 
     T getCellSize() const { return grid->getCellSize(); }
 
+    size_t getNumValues() const {
+        return field.getSize();
+    }
+
+    Vector<T>& getRawValues() {
+        return field;
+    }
+
+    std::shared_ptr<Grid<T>> getGrid() const {
+        return grid;
+    }
+
     /**
      * Divergence operator using central difference.
      */
@@ -159,6 +226,7 @@ class VelocityField {
         return (getRightU(x, y, z) - getLeftU(x, y, z) + getBottomV(x, y, z) -
                getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z)) / grid.getCellSize();
     }
+
 
 };
 
