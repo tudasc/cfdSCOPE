@@ -14,6 +14,7 @@ add_executable(
         MiniCFD_tests
 
         lingalg_basics_tests.cpp
+        solver_tests.cpp
         io_basic_test.cpp
 )
 

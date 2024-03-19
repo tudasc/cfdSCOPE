@@ -26,10 +26,43 @@ class Vector {
     Vector(size_t size) : _data(size, 0.0) {}
     Vector(std::initializer_list<T> l) : _data(l) {}
 
+    Vector(const Vector<T>& other) : _data(other._data) {}
+
     T& operator[](size_t i) { return _data[i]; }
     const T& operator[](size_t i) const { return _data[i]; }
 
-    size_t getSize() const { return _data.size(); }
+    Vector<T> operator+(const Vector<T>& other) const {
+        assert(this->getSize() == other.getSize() &&
+               "Vector addition is only defined for vectors of the same size.");
+
+        Vector<T> res = *this;
+        for (int i = 0; i < this->getSize(); i++) {
+            res[i] += other[i];
+        }
+        return res;
+    }
+
+    Vector<T> operator-() const {
+        Vector<T> res(*this);
+        for (int i = 0; i < this->getSize(); i++) {
+            res[i] = (*this)[i] * -1.0;
+        }
+        return res;
+    }
+
+    Vector<T> operator-(const Vector<T>& other) const {
+        return *this + (-other);
+    }
+
+    Vector<T> operator*(T scalar) const {
+        Vector<T> res = *this;
+        for (int i = 0; i < this->getSize(); i++) {
+            res[i] = (*this)[i] * scalar;
+        }
+        return res;
+    }
+
+    inline size_t getSize() const { return _data.size(); }
 
   private:
     std::vector<T> _data;
@@ -46,7 +79,7 @@ T dot(const Vector<T>& u, const Vector<T>& v) {
     T res = 0.0;
 
     for (size_t i = 0; i < u.getSize(); i++) {
-        res += u[i] + v[i];
+        res += u[i] * v[i];
     }
 
     return res;
