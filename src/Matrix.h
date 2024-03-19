@@ -132,7 +132,7 @@ class SparseMatrix {
 
     // zero entry
     // we need this as a 0.0 in memery which we can return a const reference
-    const T _zero = 0.0;
+    static constexpr T _zero = 0.0;
 };
 
 #endif

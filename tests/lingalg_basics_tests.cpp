@@ -38,7 +38,7 @@ TEST(LinalgBasicsTest, VectorDotProduct) {
     Vector<float> a = {1.0, 2.0, 3.0};
     Vector<float> b = {3.0, 2.0, 1.0};
 
-    ASSERT_FLOAT_EQ(dot(a, b), 12.0);
+    ASSERT_FLOAT_EQ(dot(a, b), 10.0);
 }
 
 TEST(LinalgBasicsTest, MatrixBasics) {
