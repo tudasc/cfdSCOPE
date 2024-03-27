@@ -95,6 +95,42 @@ class SparseMatrix {
         return _zero;
     }
 
+    /**
+     Matrix access operator
+    */
+    T& operator()(size_t r, size_t c) {
+        assert((r >= 0 && r < _rows && c >= 0 && c < _cols) &&
+               "Out-of-bounds access!");
+
+        size_t row_start = _rowIndex[r];
+        size_t row_end = _rowIndex[r + 1];
+
+        for (int i = row_start; i < row_end; i++) {
+            if (_colIndex[i] == c)
+                return _v[i];
+        }
+        assert("Index not set" && false);
+    }
+
+
+    /**
+    Scale matrix by faktor k. 
+    */
+    void operator*=(T k) {
+        for (auto& v: _v) {
+            v *= k;
+        }
+    }
+
+    /**
+    Compute scaled matrix.
+    */
+    SparseMatrix<T> operator*(T k) const {
+        auto cpy(*this);
+        cpy *= k;
+        return cpy;
+    }
+
     size_t getCols() const { return _cols; }
 
     size_t getRows() const { return _rows; }
@@ -126,9 +162,9 @@ class SparseMatrix {
     size_t _cols;
 
     // CSR arrays
-    Vector<T> _v;
-    Vector<size_t> _colIndex;
-    Vector<size_t> _rowIndex;
+    std::vector<T> _v;
+    std::vector<size_t> _colIndex;
+    std::vector<size_t> _rowIndex;
 
     // zero entry
     // we need this as a 0.0 in memery which we can return a const reference

@@ -133,7 +133,7 @@ class VelocityField {
         : grid(grid), field(grid->getCellCount() * 3) {}
 
     VelocityField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
-        : grid(grid) {
+        : grid(grid), field(grid->getCellCount() * 3) {
         if (values.getSize() != grid->getCellCount() * 3) {
             // TODO: Error handling
         }
@@ -149,7 +149,7 @@ class VelocityField {
     }
 
     const T& getRightU(size_t x, size_t y, size_t z) const {
-        assert(x + 1 < grid.getWidth() && "x out of bounds");
+        assert(x + 1 < grid->getWidth() && "x out of bounds");
         return field[grid->cellIndex(x + 1, y, z) * 3];
     }
 
@@ -224,9 +224,44 @@ class VelocityField {
     T div(size_t x, size_t y, size_t z) const {
         // TODO: Boundary conditions
         return (getRightU(x, y, z) - getLeftU(x, y, z) + getBottomV(x, y, z) -
-               getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z)) / grid.getCellSize();
+               getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z)) / grid->getCellSize();
     }
 
+    T dudx(size_t x, size_t y, size_t z) const {
+        return getLeftU(x+1,y,z) - getLeftU(x-1,y,z) / 2 * grid->getCellSize(); 
+    }
+
+    T dudy(size_t x, size_t y, size_t z) const {
+        return getLeftU(x,y+1,z) - getLeftU(x,y-1,z) / 2 * grid->getCellSize(); 
+    }
+
+    T dudz(size_t x, size_t y, size_t z) const {
+        return getLeftU(x,y,z+1) - getLeftU(x,y,z-1) / 2 * grid->getCellSize(); 
+    }
+
+    T dvdx(size_t x, size_t y, size_t z) const {
+        return getTopV(x+1,y,z) - getTopV(x-1,y,z) / 2 * grid->getCellSize(); 
+    }
+
+    T dvdy(size_t x, size_t y, size_t z) const {
+        return getTopV(x,y+1,z) - getTopV(x,y-1,z) / 2 * grid->getCellSize(); 
+    }
+
+    T dvdz(size_t x, size_t y, size_t z) const {
+        return getTopV(x,y,z+1) - getTopV(x,y,z-1) / 2 * grid->getCellSize(); 
+    }
+
+    T dwdx(size_t x, size_t y, size_t z) const {
+        return getFrontW(x+1,y,z) - getFrontW(x-1,y,z) / 2 * grid->getCellSize(); 
+    }
+
+    T dwdy(size_t x, size_t y, size_t z) const {
+        return getFrontW(x,y+1,z) - getFrontW(x,y-1,z) / 2 * grid->getCellSize(); 
+    }
+
+    T dwdz(size_t x, size_t y, size_t z) const {
+        return getFrontW(x,y,z+1) - getFrontW(x,y,z-1) / 2 * grid->getCellSize(); 
+    }
 
 };
 
