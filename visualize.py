@@ -25,7 +25,6 @@ def get_2d_from_3d(x, y, z, u, v, w, slice_dim, slice_point):
 
 
 # TODO read input form file
-# TODO add arguments on the number of points to visualize
 
 def get_input_data_3d():
     x, y, z = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
@@ -36,12 +35,12 @@ def get_input_data_3d():
     return x, y, z, u, v, w
 
 
-def show_3d_plot(x, y, z, u, v, w, frames, outfile):
+def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
     # 3D
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
-    data = interpolate_movement_3d(x, y, z, u, v, w, num_slices=frames)
+    data = interpolate_movement_3d(x, y, z, u, v, w, num_slices=frames,slice_step=nth_point)
 
     def animate(i, plot_data):
         ax.clear()
@@ -144,15 +143,20 @@ def interpolate_movement_2d(x, y, u, v, num_slices=100, slice_step=10, movement_
 
 def main():
     parser = argparse.ArgumentParser("Plots Sample Data")
-    parser.add_argument("--two_d", action="store_true", help="Plot only 2D", required=False)
-    parser.add_argument("--slice_dim", default='z', choices=['x', 'y', 'z'], action="store",
-                        help="which dimension to slice in case of 2D plot", required=False)
-    parser.add_argument("--slice_point", type=int, default=0, action="store",
-                        help="where to slice dimension (given in grid Points)", required=False)
-    parser.add_argument("--frames", type=int, default=100, action="store", help="number of frames to plot",
+    parser.add_argument("input",type=str,action="store", help="name of input file")
+    parser.add_argument("--nth_point", type=int, default=10, action="store", help="distance of grid points to visualize with arrows (100 grid points and nth_point=20 ==> 5 arrows visualized)",
                         required=False)
     parser.add_argument("--output", type=str, default="visu.gif", action="store", help="name of output file",
                         required=False)
+    parser.add_argument("--frames", type=int, default=100, action="store", help="number of frames to animate",
+                        required=False)
+    twod = parser.add_argument_group('arguments to use if a 2D plot is desired')
+    twod.add_argument("--two_d", action="store_true", help="Plot only 2D", required=False)
+    twod.add_argument("--slice_dim", default='z', choices=['x', 'y', 'z'], action="store",
+                        help="which dimension to slice in case of 2D plot", required=False)
+    twod.add_argument("--slice_point", type=int, default=0, action="store",
+                        help="where to slice dimension (given in grid Points)", required=False)
+
 
     ARGS = parser.parse_args()
 
@@ -160,15 +164,15 @@ def main():
 
     if ARGS.two_d:
         x, y, u, v = get_2d_from_3d(x, y, z, u, v, w, ARGS.slice_dim, ARGS.slice_point)
-        plot_2d(x, y, u, v, ARGS.frames, ARGS.output)
+        plot_2d(x, y, u, v, ARGS.frames,ARGS.nth_point, ARGS.output)
     else:
-        show_3d_plot(x, y, z, u, v, w, ARGS.frames, ARGS.output)
+        plot_3d(x, y, z, u, v, w, ARGS.frames, ARGS.nth_point, ARGS.output)
 
     print("Visualization written to %s" % ARGS.output)
 
 
-def plot_2d(x, y, u, v, frames, outfile):
-    data = interpolate_movement_2d(x, y, u, v, num_slices=frames)
+def plot_2d(x, y, u, v, frames,nth_point, outfile):
+    data = interpolate_movement_2d(x, y, u, v, num_slices=frames,slice_step=nth_point)
     fig, ax = plt.subplots()
 
     def animate(i, plot_data):
