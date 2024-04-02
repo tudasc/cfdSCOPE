@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits import mplot3d
 from matplotlib.animation import FuncAnimation, PillowWriter
-
 import argparse
 from tqdm import tqdm
 import scipy.interpolate
@@ -16,12 +14,14 @@ def progress_callback_func(current_frame: int, total_frames: int):
 
 
 def get_2d_from_3d(x, y, z, u, v, w, slice_dim, slice_point):
-    # TODO actualy get a slice of the 3D input
-    x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+    assert slice_dim in ["x", "y", "z"]
 
-    u = -y / np.sqrt(x ** 2 + y ** 2)
-    v = x / np.sqrt(x ** 2 + y ** 2)
-    return x, y, u, v
+    if slice_dim == "x":
+        return x[slice_point, :, :], y[slice_point, :, :], v[slice_point, :, :], w[slice_point, :, :]
+    if slice_dim == "y":
+        return x[:, slice_point, :], y[:, slice_point, :], u[:, slice_point, :], w[:, slice_point, :]
+    if slice_dim == "z":
+        return x[:, :, slice_point], y[:, :, slice_point], u[:, :, slice_point], v[:, :, slice_point]
 
 
 # TODO read input form file
@@ -164,7 +164,7 @@ def main():
     else:
         show_3d_plot(x, y, z, u, v, w, ARGS.frames, ARGS.output)
 
-    print("Visualization written to %s", ARGS.output)
+    print("Visualization written to %s" % ARGS.output)
 
 
 def plot_2d(x, y, u, v, frames, outfile):
