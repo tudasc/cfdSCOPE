@@ -9,6 +9,7 @@ import scipy.interpolate
 progress_bar = None
 
 
+# for progressing the progress bar
 def progress_callback_func(current_frame: int, total_frames: int):
     progress_bar.update(1)
 
@@ -56,7 +57,6 @@ def get_sample_3d_input_data():
     return x, y, z, u, v, w
 
 
-# TODO read input form file
 def read_3d_input_data(filename):
     # parse header
     f = open(filename)
@@ -138,6 +138,7 @@ def interpolate_movement_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, mov
     return result
 
 
+# generate a 3D animation
 def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
     # 3D
     fig = plt.figure()
@@ -166,6 +167,7 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
     progress_bar = None
 
 
+# get a 2D slice from the 3D data
 def get_2d_from_3d(x, y, z, u, v, w, slice_dim, slice_point):
     assert slice_dim in ["x", "y", "z"]
 
@@ -177,6 +179,7 @@ def get_2d_from_3d(x, y, z, u, v, w, slice_dim, slice_point):
         return x[:, :, slice_point], y[:, :, slice_point], u[:, :, slice_point], v[:, :, slice_point]
 
 
+# same as above but for 2D
 def interpolate_movement_2d(x, y, u, v, num_slices=100, slice_step=10, movement_factor=0.1):
     xx = x[0::slice_step, 0::slice_step]
     yy = y[0::slice_step, 0::slice_step]
