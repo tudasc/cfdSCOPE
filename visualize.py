@@ -58,8 +58,38 @@ def get_sample_3d_input_data():
 
 # TODO read input form file
 def read_3d_input_data(filename):
-    assert False
-    return None
+    # parse header
+    f = open(filename)
+    header = f.readline().strip().split(',')
+    header = [int(h) for h in header]  # as int
+    assert len(header) == 4
+
+    num_x = header[0]
+    num_y = header[0]
+    num_z = header[0]
+    resolution = header[3]
+
+    data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+
+    # pressure would be the 0th value, but we don't visualize it
+    # the pressure array would contain one nan for each line in the file that needs to be removed
+    # ( this happens due to the trailing comma)
+    # p = data[:, 0:-1:4]
+    # p = p.reshape(num_x, num_y, num_z)
+    # p is not needed but this would be the correct code to read it in
+    u = data[:, 1::4]  # every 4th value is u
+    # Reshape into the correct shape
+    u = u.reshape(num_x, num_y, num_z)
+    v = data[:, 2::4]
+    v = v.reshape(num_x, num_y, num_z)
+    w = data[:, 3::4]
+    w = w.reshape(num_x, num_y, num_z)
+
+    x, y, z = np.meshgrid(np.linspace(0, resolution * num_x, num_x),
+                          np.linspace(0, resolution * num_y, num_y),
+                          np.linspace(0, resolution * num_z, num_z))
+
+    return x, y, z, u, v, w
 
 
 # interpolates the arrow movement for animation
