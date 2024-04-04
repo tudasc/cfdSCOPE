@@ -7,6 +7,8 @@
 #include "Matrix.h"
 #include "Vector.h"
 
+#include <iostream>
+
 /**
     https://en.wikipedia.org/wiki/Conjugate_gradient_method
 */
@@ -24,6 +26,7 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
 
     // Iterate until convergence
     while (oldSqrResidNorm > tol) {
+        std::cout << "PCG residual=" << oldSqrResidNorm << "\n";
         Vector<T> z = A.spmv(direction);
 
         T step_size = dot(residual, residual) / dot(direction, z);

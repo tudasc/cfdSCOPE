@@ -8,6 +8,8 @@
 
 #include "Vector.h"
 
+#include <iostream>
+
 /**
     Data type representing one entry in the sparse matrix
 */
@@ -112,12 +114,11 @@ class SparseMatrix {
         assert("Index not set" && false);
     }
 
-
     /**
-    Scale matrix by faktor k. 
+    Scale matrix by faktor k.
     */
     void operator*=(T k) {
-        for (auto& v: _v) {
+        for (auto& v : _v) {
             v *= k;
         }
     }
@@ -170,5 +171,15 @@ class SparseMatrix {
     // we need this as a 0.0 in memery which we can return a const reference
     static constexpr T _zero = 0.0;
 };
+
+template<typename T>
+inline void dumpMatrix(const SparseMatrix<T>& A) {
+    for (auto i = 0; i < A.getRows(); i++) {
+        for (auto j = 0; j < A.getCols(); j++) {
+            std::cout << A(i, j) << " ";
+        }
+        std::cout << "\n";
+    }
+}
 
 #endif
