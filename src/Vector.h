@@ -15,6 +15,28 @@ using Vec2 = std::pair<T, T>;
 template <typename T>
 struct Vec3 {
     T x, y, z;
+
+    Vec3<T>(T x, T y, T z) : x(x), y(y), z(z) {
+    }
+
+    Vec3<T>() : Vec3<T>(0, 0, 0) {
+    }
+
+    Vec3<T> operator+(Vec3<T> other) const {
+        return {x + other.x, y + other.y, z + other.z};
+    }
+
+    Vec3<T> operator-() const {
+        return {-x, -y, -z};
+    }
+
+    Vec3 operator-(Vec3<T> other) const {
+        return *this + (-other);
+    }
+
+    Vec3<T> operator*(T scalar) const {
+        return {x * scalar, y * scalar, z * scalar};
+    }
 };
 
 /**
