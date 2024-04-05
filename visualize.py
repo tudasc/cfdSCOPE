@@ -15,10 +15,10 @@ def progress_callback_func(current_frame: int, total_frames: int):
 
 
 def main():
-    parser = argparse.ArgumentParser("Plots Sample Data")
+    parser = argparse.ArgumentParser("Visualizes CFD data")
     parser.add_argument("input", type=str, action="store", help="name of input file. "
                                                                 "If SAMPLE is given as filename, it will generate sample data to visualize and does NOT read the SAMPLE file (if present).")
-    parser.add_argument("--nth_point", type=int, default=10, action="store",
+    parser.add_argument("--nth_point", type=int, default=1, action="store",
                         help="distance of grid points to visualize with arrows (100 grid points and nth_point=20 ==> 5 arrows visualized)",
                         required=False)
     parser.add_argument("--output", type=str, default="visu.gif", action="store", help="name of output file",
@@ -148,9 +148,6 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
 
     def animate(i, plot_data):
         ax.clear()
-        ax.set_xlim(-5, 5)
-        ax.set_ylim(-5, 5)
-        ax.set_zlim(-5, 5)
         x, y, z, u, v, w = plot_data[i]
         q = ax.quiver(x, y, z, u, v, w)
 
@@ -221,8 +218,6 @@ def plot_2d(x, y, u, v, frames, nth_point, outfile):
 
     def animate(i, plot_data):
         ax.clear()
-        ax.set_xlim(-5, 5)
-        ax.set_ylim(-5, 5)
         x, y, u, v = plot_data[i]
         q = ax.quiver(x, y, u, v, np.linalg.norm((v, u)))
 
