@@ -22,7 +22,7 @@ template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
     Vector<T> transportEq(U.getNumValues());
     size_t idx = 0;
-    //TODO Parallelize: transform idx to be based on i,j,k
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
@@ -35,9 +35,9 @@ inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
                 auto f_z = -U.getLeftU(i, j, k) * U.dwdx(i, j, k) -
                            U.getTopV(i, j, k) * U.dwdy(i, j, k) -
                            U.getFrontW(i, j, k) * U.dwdz(i, j, k);
-                transportEq[idx++] = f_x;
-                transportEq[idx++] = f_y;
-                transportEq[idx++] = f_z;
+                transportEq[i* (U.getHeight()+U.getDepth()+3) + j*(U.getDepth()+3)+k*3 + 0] = f_x;
+                transportEq[i* (U.getHeight()+U.getDepth()+3) + j*(U.getDepth()+3)+k*3 + 1] = f_y;
+                transportEq[i* (U.getHeight()+U.getDepth()+3) + j*(U.getDepth()+3)+k*3 + 2] = f_z;
             }
         }
     }
@@ -125,7 +125,7 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
     size_t idx = 0;
     std::vector<SparseMatrixEntry<T>> coeffs;
 
-    //TOOD Parallelize .push_back not suitable for openmp for
+    //TODO Parallelize .push_back not suitable for openmp for
     for (size_t k = 0; k < depth; k++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t i = 0; i < width; i++) {
