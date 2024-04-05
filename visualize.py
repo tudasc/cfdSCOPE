@@ -18,8 +18,7 @@ def progress_callback_func(current_frame: int, total_frames: int):
 
 def main():
     parser = argparse.ArgumentParser("Visualizes CFD data")
-    parser.add_argument("input", type=str, action="store", help="name of input file. "
-                                                                "If SAMPLE is given as filename, it will generate sample data to visualize and does NOT read the SAMPLE file (if present).")
+    parser.add_argument("input", type=str, action="store", help="name of input file. ")
     parser.add_argument("--static", action="store_true", help="dont animate the plot.")
     parser.add_argument("--nth_point", type=int, default=1, action="store",
                         help="distance of grid points to visualize with arrows (100 grid points and nth_point=20 ==> 5 arrows visualized)",
@@ -37,16 +36,12 @@ def main():
 
     ARGS = parser.parse_args()
 
-    if ARGS.input == "SAMPLE":
-        x, y, z, u, v, w = get_sample_3d_input_data()
-    else:
-        x, y, z, u, v, w = read_3d_input_data(ARGS.input)
+    x, y, z, u, v, w = read_3d_input_data(ARGS.input)
 
     if ARGS.two_d:
         x, y, u, v = get_2d_from_3d(x, y, z, u, v, w, ARGS.slice_dim, ARGS.slice_point)
         if ARGS.static:
-            assert False and "Not implemented"
-            pass
+            plot_2d_static(x, y, u, v, ARGS.nth_point, ARGS.output)
         else:
             plot_2d(x, y, u, v, ARGS.frames, ARGS.nth_point, ARGS.output)
     else:
@@ -153,16 +148,13 @@ def plot_3d_static(x, y, z, u, v, w, nth_point, outfile):  #
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
-    #todo get limits from data header
-    ax.set_xlim([0, 10])
-    ax.set_ylim([0, 10])
-    ax.set_zlim([0, 1])
+    ax.set_xlim([0, x.max()])
+    ax.set_ylim([0, y.max()])
+    ax.set_zlim([0, z.max()])
 
     q = ax.quiver(x, y, z, u, v, w, **quiver_size_args)
-    plt.show()
 
     plt.savefig(outfile, dpi=300)
-    pass
 
 
 # generate a 3D animation
@@ -173,9 +165,19 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
 
     data = interpolate_movement_3d(x, y, z, u, v, w, num_slices=frames, slice_step=nth_point)
 
-    def animate(i, plot_data):
+    # don't show arrows moving out of bounds
+    xlim = x.max()
+    ylim = y.max()
+    zlim = z.max()
+
+    def animate(i, plot_data, xlim, ylim, zlim):
         ax.clear()
         x, y, z, u, v, w = plot_data[i]
+
+        ax.set_xlim([0, xlim])
+        ax.set_ylim([0, ylim])
+        ax.set_zlim([0, zlim])
+
         q = ax.quiver(x, y, z, u, v, w)
 
         return q,
@@ -184,7 +186,8 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
     global progress_bar
     progress_bar = tqdm(total=frames)
 
-    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data])
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames,
+                        fargs=[data, xlim, ylim, zlim])
     ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
 
     progress_bar.close()
@@ -239,13 +242,31 @@ def interpolate_movement_2d(x, y, u, v, num_slices=100, slice_step=10, movement_
     return result
 
 
+def plot_2d_static(x, y, u, v, nth_point, outfile):  #
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    ax.set_xlim([0, x.max()])
+    ax.set_ylim([0, y.max()])
+
+    q = ax.quiver(x, y, u, v, **quiver_size_args)
+    plt.savefig(outfile, dpi=300)
+
+
 def plot_2d(x, y, u, v, frames, nth_point, outfile):
     data = interpolate_movement_2d(x, y, u, v, num_slices=frames, slice_step=nth_point)
     fig, ax = plt.subplots()
 
-    def animate(i, plot_data):
+    xlim = x.max()
+    ylim = y.max()
+
+    def animate(i, plot_data, xlim, ylim):
         ax.clear()
         x, y, u, v = plot_data[i]
+
+        ax.set_xlim([0, xlim])
+        ax.set_ylim([0, ylim])
+
         q = ax.quiver(x, y, u, v, np.linalg.norm((v, u)))
 
         return q,
@@ -254,7 +275,7 @@ def plot_2d(x, y, u, v, frames, nth_point, outfile):
     global progress_bar
     progress_bar = tqdm(total=frames)
 
-    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data])
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames, fargs=[data, xlim, ylim])
     ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
 
     progress_bar.close()
