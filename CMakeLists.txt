@@ -8,6 +8,8 @@ project(
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_CXX_FLAGS -fopenmp)
+
 add_executable(minicfd
     src/MiniCFD.cpp
 )
@@ -36,6 +38,7 @@ if(ENABLE_TRACE_LOG)
 else()
     target_compile_definitions(minicfd PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 endif()
+
 
 
 add_subdirectory(tests)
