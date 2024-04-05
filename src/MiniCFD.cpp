@@ -22,6 +22,7 @@ template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
     Vector<T> transportEq(U.getNumValues());
     size_t idx = 0;
+    //TODO Parallelize: transform idx to be based on i,j,k
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
@@ -57,7 +58,9 @@ template <typename T>
 inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
                                                 double dt) {
     auto U_adv = U;
-    T cellSize = U.getCellSize();
+
+    auto cellSize = U.getCellSize();
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
@@ -121,6 +124,8 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
 
     size_t idx = 0;
     std::vector<SparseMatrixEntry<T>> coeffs;
+
+    //TOOD Parallelize .push_back not suitable for openmp for
     for (size_t k = 0; k < depth; k++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t i = 0; i < width; i++) {
@@ -207,6 +212,7 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 
     VelocityField<T> U_corr = U_adv;
 
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < width; i++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t k = 0; k < depth; k++) {

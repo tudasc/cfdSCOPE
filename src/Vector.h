@@ -77,6 +77,7 @@ class Vector {
 
     Vector<T> operator*(T scalar) const {
         Vector<T> res = *this;
+#pragma omp parallel for
         for (int i = 0; i < this->getSize(); i++) {
             res[i] = (*this)[i] * scalar;
         }
