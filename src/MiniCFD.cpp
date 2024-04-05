@@ -277,7 +277,8 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 int main(int argc, char** argv) {
     // Command line parsing (later)
 
-    auto N = 100;
+    assert(argc> 1);
+    auto N = std::stoi(argv[1]);
 
     auto width = N;
     auto height = N;
