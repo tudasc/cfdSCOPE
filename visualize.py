@@ -65,8 +65,8 @@ def read_3d_input_data(filename):
     assert len(header) == 4
 
     num_x = header[0]
-    num_y = header[0]
-    num_z = header[0]
+    num_y = header[1]
+    num_z = header[2]
     resolution = header[3]
 
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
