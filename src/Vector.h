@@ -40,9 +40,11 @@ template <typename T>
 class Vector {
   public:
     Vector(size_t size) : _data(size, 0.0) {}
+    Vector(size_t size, const T& value) : _data(size, value) {}
     Vector(std::initializer_list<T> l) : _data(l) {}
 
     Vector(const Vector<T>& other) : _data(other._data) {}
+    Vector(const std::vector<T> other) : _data(other) {}
 
     T& operator[](size_t i) { return _data[i]; }
     const T& operator[](size_t i) const { return _data[i]; }
