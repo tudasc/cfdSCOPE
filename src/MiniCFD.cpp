@@ -239,9 +239,9 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
     }
     SparseMatrix<T> A(size, size, coeffs);
 
-    dumpMatrix(A);
-    std::cout << "-----------\n";
-    dumpVector(b);
+    // dumpMatrix(A);
+    // std::cout << "-----------\n";
+    // dumpVector(b);
     //exit(0);
 
     std::cout << "Running PCG\n";
@@ -298,11 +298,11 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 int main(int argc, char** argv) {
     // Command line parsing (later)
 
-    auto N = 10;
+    auto N = 20;
 
     auto width = N;
     auto height = N;
-    auto depth = 1;
+    auto depth = N;
 
     // Set up grid
     auto grid = std::make_shared<Grid<ScalarT>>(width, height, depth, 1);
@@ -319,10 +319,14 @@ int main(int argc, char** argv) {
                 U->setTopV(i, j, k, 0);
                 U->setFrontW(i, j, k, 0);
                 p->setPressure(i, j, k, 1);
+                if (j == 0 && i > 0) {
+                    U->setLeftU(i, j, k, 1);
+                }
             }
         }
     }
-    U->setLeftU(4, 4, 0, 1);
+
+    
 
     double endTime = 1.0;
     double dt = 0.05;
