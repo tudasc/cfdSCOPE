@@ -116,6 +116,7 @@ class SparseMatrix {
     Scale matrix by faktor k.
     */
     void operator*=(T k) {
+#pragma omp parallel for
         for (auto& v : _v) {
             v *= k;
         }
@@ -142,6 +143,7 @@ class SparseMatrix {
 
         Vector<T> res(_rows);
 
+#pragma omp parallel for
         for (size_t i = 0; i < _rows; i++) {
             T acc = 0.0;
 
