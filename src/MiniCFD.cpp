@@ -4,6 +4,7 @@
 #include "Matrix.h"
 #include "Solver.h"
 #include "Vector.h"
+#include "Util.h"
 #include <array>
 #include <exception>
 #include <iostream>
@@ -218,14 +219,18 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                 }
                 coeffs.push_back({idx, idx, numRowEntries * kMiddle});
 
+                // std::cout << "Cell (" << i << ", " << j << ", " << k <<"):  neighbors=" <<  numRowEntries << ", div=" << U_div_ijk << "\n";
+
                 idx++;
             }
         }
     }
     SparseMatrix<T> A(size, size, coeffs);
 
-    dumpMatrix(A);
-    exit(0);
+    // dumpMatrix(A);
+    // std::cout << "-----------\n";
+    // dumpVector(b);
+    //exit(0);
 
     std::cout << "Running PCG\n";
     Vector<T> p_new = pcg(A, b);
@@ -272,7 +277,7 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 int main(int argc, char** argv) {
     // Command line parsing (later)
 
-    auto N = 3;
+    auto N = 100;
 
     auto width = N;
     auto height = N;
@@ -293,14 +298,12 @@ int main(int argc, char** argv) {
                 U->setTopV(i, j, k, 0);
                 U->setFrontW(i, j, k, 0);
                 p->setPressure(i, j, k, 1);
-                if (j == 1) {
-                    U->setTopV(i, j, k, 5);
-                }
             }
         }
     }
+    U->setLeftU(50, 50, 50, 2);
 
-    double endTime = 10.0;
+    double endTime = 0.05;
     double dt = 0.1;
 
     std::cout << "Initialization done!\n";
@@ -310,9 +313,16 @@ int main(int argc, char** argv) {
     unsigned step = 0;
     for (double t = 0; t < endTime; t += dt) {
         step++;
-        // - Solve advection: implicit euler
+
+        // std::cout << "Initial field:\n";
+        // dumpVector(U->getRawValues());
+
+        // - Solve advection
         std::cout << "Solving advection equation\n";
         auto U_adv = solveAdvection(*U, dt);
+
+        // std::cout << "After advection:\n";
+        // dumpVector(U_adv.getRawValues());
 
         // - Pressure corection
         std::cout << "Solving pressure correction\n";
@@ -324,6 +334,9 @@ int main(int argc, char** argv) {
         // - Write field
         write_to_file(U_corr, p_new, "fields_" + std::to_string(step) + ".txt");
         std::cout << "Time step complete. t = " << t << "\n";
+
+        *U = U_corr;
+        *p = p_new;
     }
 
     // - Validation
