@@ -5,6 +5,8 @@ import argparse
 from tqdm import tqdm
 import scipy.interpolate
 
+quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.1}
+
 # to show a progress bar during rendering
 progress_bar = None
 
@@ -18,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser("Visualizes CFD data")
     parser.add_argument("input", type=str, action="store", help="name of input file. "
                                                                 "If SAMPLE is given as filename, it will generate sample data to visualize and does NOT read the SAMPLE file (if present).")
+    parser.add_argument("--static", action="store_true", help="dont animate the plot.")
     parser.add_argument("--nth_point", type=int, default=1, action="store",
                         help="distance of grid points to visualize with arrows (100 grid points and nth_point=20 ==> 5 arrows visualized)",
                         required=False)
@@ -41,9 +44,16 @@ def main():
 
     if ARGS.two_d:
         x, y, u, v = get_2d_from_3d(x, y, z, u, v, w, ARGS.slice_dim, ARGS.slice_point)
-        plot_2d(x, y, u, v, ARGS.frames, ARGS.nth_point, ARGS.output)
+        if ARGS.static:
+            assert False and "Not implemented"
+            pass
+        else:
+            plot_2d(x, y, u, v, ARGS.frames, ARGS.nth_point, ARGS.output)
     else:
-        plot_3d(x, y, z, u, v, w, ARGS.frames, ARGS.nth_point, ARGS.output)
+        if ARGS.static:
+            plot_3d_static(x, y, z, u, v, w, ARGS.nth_point, ARGS.output)
+        else:
+            plot_3d(x, y, z, u, v, w, ARGS.frames, ARGS.nth_point, ARGS.output)
 
     print("Visualization written to %s" % ARGS.output)
 
@@ -136,6 +146,23 @@ def interpolate_movement_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, mov
         result.append((xx, yy, zz, uu, vv, ww))
 
     return result
+
+
+#
+def plot_3d_static(x, y, z, u, v, w, nth_point, outfile):  #
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    #todo get limits from data header
+    ax.set_xlim([0, 10])
+    ax.set_ylim([0, 10])
+    ax.set_zlim([0, 1])
+
+    q = ax.quiver(x, y, z, u, v, w, **quiver_size_args)
+    plt.show()
+
+    plt.savefig(outfile, dpi=300)
+    pass
 
 
 # generate a 3D animation
