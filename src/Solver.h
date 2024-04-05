@@ -15,7 +15,7 @@
 template <typename T>
 Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
     Vector<T> x(b.getSize());
-    T tol = std::numeric_limits<T>::epsilon();
+    T tol = 1e-8;//std::numeric_limits<T>::epsilon();
 
     // Initialize residual vector
     Vector<T> residual = b - A.spmv(x);
