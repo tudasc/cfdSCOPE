@@ -7,6 +7,7 @@
 #include "Vector.h"
 
 #include "spdlog/cfg/env.h"
+#include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 #include <cxxopts.hpp>
 
@@ -249,7 +250,7 @@ int main(int argc, char** argv) {
 
     // clang-format off
     options.add_options()
-        ("l,log-level", "Log level", cxxopts::value<std::string>())
+        ("l,log-level", "Log level (trace, debug, info, warn, err, critical or off)", cxxopts::value<std::string>()->default_value("info"))
         ("d,domain-size", "Number of the simulation cells along all three axes", cxxopts::value<size_t>()->default_value("10"))
         ("c,cell-size", "Size of each simulation cell", cxxopts::value<ScalarT>()->default_value("1.0"))
         ("e,end-time", "Simulation duration (seconds)", cxxopts::value<double>()->default_value("1.0"))
@@ -264,7 +265,27 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
-    spdlog::cfg::load_env_levels();
+    const std::string logLevel = args["log-level"].as<std::string>();
+    if (logLevel == "trace") {
+        spdlog::set_level(spdlog::level::trace);
+    } else if (logLevel == "debug") {
+        spdlog::set_level(spdlog::level::debug);
+    } else if (logLevel == "info") {
+        spdlog::set_level(spdlog::level::info);
+    } else if (logLevel == "warn") {
+        spdlog::set_level(spdlog::level::warn);
+    } else if (logLevel == "err") {
+        spdlog::set_level(spdlog::level::err);
+    } else if (logLevel == "critical") {
+        spdlog::set_level(spdlog::level::critical);
+    } else if (logLevel == "off") {
+        spdlog::set_level(spdlog::level::off);
+    } else {
+        spdlog::critical("Log level '{}' not recognized!");
+        exit(-1);
+    }
+
+    // spdlog::cfg::load_env_levels();
     spdlog::info("Welcome to MiniCFD!");
 
     auto N = args["domain-size"].as<size_t>();
