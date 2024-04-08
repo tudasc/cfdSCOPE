@@ -182,6 +182,10 @@ def plot_3d(data, frames, nth_point, outfile):
         ax.set_ylim([0, ylim])
         ax.set_zlim([0, zlim])
 
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+
         q = ax.quiver(x, y, z, u, v, w, **quiver_size_args)
 
         return q,
