@@ -8,6 +8,7 @@
 
 #include "spdlog/cfg/env.h"
 #include "spdlog/spdlog.h"
+#include <cxxopts.hpp>
 
 #include <array>
 #include <exception>
@@ -65,7 +66,7 @@ inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
                                (k + 0.5) * cellSize};
                     auto pu_origin = traceBackward(pu, U, dt);
                     U_adv.setLeftU(i, j, k, U.trilerp(pu_origin).x);
-                    SPDLOG_TRACE("Cell at {}, {}, {}:  y comes from {}", pu.x,
+                    SPDLOG_TRACE("Cell at {}, {}, {}:  x comes from {}", pu.x,
                                  pu.y, pu.z, pu_origin.x);
                 }
                 // v is on boundary for j = 0
@@ -242,19 +243,38 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 }
 
 int main(int argc, char** argv) {
+    // Command line parsing
+    cxxopts::Options options("MiniCFD",
+                             "Simple CFD simulation for didactic purposes.");
+
+    // clang-format off
+    options.add_options()
+        ("l,log-level", "Log level", cxxopts::value<std::string>())
+        ("d,domain-size", "Number of the simulation cells along all three axes", cxxopts::value<size_t>()->default_value("10"))
+        ("c,cell-size", "Size of each simulation cell", cxxopts::value<ScalarT>()->default_value("1.0"))
+        ("e,end-time", "Simulation duration (seconds)", cxxopts::value<double>()->default_value("1.0"))
+        ("s,step-size", "Simulation step size (seconds)", cxxopts::value<double>()->default_value("0.05"))
+        ("p,output-prefix", "Output file prefix", cxxopts::value<std::string>()->default_value("fields"))
+        ("h,help", "Print usage")
+    ;
+    // clang-format on
+    auto args = options.parse(argc, argv);
+    if (args.count("help")) {
+        std::cout << options.help() << std::endl;
+        exit(0);
+    }
+
     spdlog::cfg::load_env_levels();
     spdlog::info("Welcome to MiniCFD!");
 
-    // Command line parsing (later)
-
-    auto N = 3;
-
+    auto N = args["domain-size"].as<size_t>();
     auto width = N;
     auto height = N;
     auto depth = N;
 
     // Set up grid
-    auto grid = std::make_shared<Grid<ScalarT>>(width, height, depth, 1);
+    auto grid = std::make_shared<Grid<ScalarT>>(
+        width, height, depth, args["cell-size"].as<ScalarT>());
 
     // Create velovity and pressure fields
     auto U = std::make_unique<VelocityField<ScalarT>>(grid);
@@ -275,11 +295,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    double endTime = 1.0;
-    double dt = 0.05;
+    double endTime = args["end-time"].as<double>();
+    double dt = args["step-size"].as<double>();
 
     spdlog::info("Initialization done!");
-    write_to_file(*U, *p, "fields_0.txt");
+    write_to_file(*U, *p, args["output-prefix"].as<std::string>() + "_0.txt");
 
     // Time loop
     unsigned step = 0;
@@ -306,7 +326,9 @@ int main(int argc, char** argv) {
         auto U_corr = applyPressureCorrection(U_adv, p_new, dt);
 
         // - Write field
-        write_to_file(U_corr, p_new, "fields_" + std::to_string(step) + ".txt");
+        write_to_file(U_corr, p_new,
+                      args["output-prefix"].as<std::string>() + "_" +
+                          std::to_string(step) + ".txt");
         spdlog::info("Time step complete. t = {:.5f}", t);
 
         *U = U_corr;
