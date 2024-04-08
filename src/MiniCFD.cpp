@@ -5,6 +5,10 @@
 #include "Solver.h"
 #include "Util.h"
 #include "Vector.h"
+
+#include "spdlog/cfg/env.h"
+#include "spdlog/spdlog.h"
+
 #include <array>
 #include <exception>
 #include <iostream>
@@ -61,9 +65,8 @@ inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
                                (k + 0.5) * cellSize};
                     auto pu_origin = traceBackward(pu, U, dt);
                     U_adv.setLeftU(i, j, k, U.trilerp(pu_origin).x);
-                    std::cout << "Cell at " << pu.x << ", " << pu.y << ", "
-                              << pu.z << ":  u comes from " << pu_origin.x
-                              << "\n";
+                    SPDLOG_TRACE("Cell at {}, {}, {}:  y comes from {}", pu.x,
+                                 pu.y, pu.z, pu_origin.x);
                 }
                 // v is on boundary for j = 0
                 if (j > 0) {
@@ -177,20 +180,14 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                 }
                 coeffs.push_back({idx, idx, numRowEntries * kMiddle});
 
-                std::cout << "Cell (" << i << ", " << j << ", " << k
-                          << "):  neighbors=" << numRowEntries
-                          << ", div=" << U_div_ijk << "\n";
+                SPDLOG_TRACE("Cell ({}, {}, {}): neighbors={}, div={}", i, j, k,
+                             numRowEntries, U_div_ijk);
             }
         }
     }
     SparseMatrix<T> A(size, size, coeffs);
 
-    // dumpMatrix(A);
-    // std::cout << "-----------\n";
-    // dumpVector(b);
-    // exit(0);
-
-    std::cout << "Running PCG\n";
+    SPDLOG_TRACE("Running PCG");
     Vector<T> p_new = pcg(A, b);
     return {p.getGrid(), p_new};
 }
@@ -245,9 +242,12 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 }
 
 int main(int argc, char** argv) {
+    spdlog::cfg::load_env_levels();
+    spdlog::info("Welcome to MiniCFD!");
+
     // Command line parsing (later)
 
-    auto N = 20;
+    auto N = 3;
 
     auto width = N;
     auto height = N;
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
     double endTime = 1.0;
     double dt = 0.05;
 
-    std::cout << "Initialization done!\n";
+    spdlog::info("Initialization done!");
     write_to_file(*U, *p, "fields_0.txt");
 
     // Time loop
@@ -286,29 +286,28 @@ int main(int argc, char** argv) {
     for (double t = 0; t < endTime; t += dt) {
         step++;
 
-        std::cout << "Initial U_x field:\n";
-        dumpVectorComponent(U->getRawValues(), 0, 3);
+        SPDLOG_TRACE("Initial U_x field:\n{}",
+                     dumpVectorComponent(U->getRawValues(), 0, 3));
 
         // - Solve advection
-        std::cout << "Solving advection equation\n";
+        spdlog::debug("Solving advection equation");
         auto U_adv = solveAdvection(*U, dt);
 
-        std::cout << "U_x after advection:\n";
-        dumpVectorComponent(U_adv.getRawValues(), 0, 3);
+        SPDLOG_TRACE("U_x after advection:\n{}",
+                     dumpVectorComponent(U_adv.getRawValues(), 0, 3));
 
         // - Pressure corection
-        std::cout << "Solving pressure correction\n";
+        spdlog::debug("Solving pressure correction...");
         auto p_new = solvePressureCorrection(U_adv, *p, dt);
 
-        std::cout << "Pressure field:\n";
-        dumpVector(p_new.getRawValues());
+        SPDLOG_TRACE("Pressure field: {}\n", dumpVector(p_new.getRawValues()));
 
-        std::cout << "Applying pressure correction\n";
+        spdlog::debug("Applying pressure correction...");
         auto U_corr = applyPressureCorrection(U_adv, p_new, dt);
 
         // - Write field
         write_to_file(U_corr, p_new, "fields_" + std::to_string(step) + ".txt");
-        std::cout << "Time step complete. t = " << t << "\n";
+        spdlog::info("Time step complete. t = {:.5f}", t);
 
         *U = U_corr;
         *p = p_new;
