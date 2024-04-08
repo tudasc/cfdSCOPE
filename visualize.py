@@ -100,9 +100,10 @@ def read_3d_input_data(filename):
                 v.append(data[z * num_y + y, x * 4 + 2])
                 w.append(data[z * num_y + y, x * 4 + 3])
 
-    s =(num_x,num_y,num_z)
+    s = (num_x, num_y, num_z)
 
-    return np.array(xx).reshape(s), np.array(yy).reshape(s), np.array(zz).reshape(s), np.array(u).reshape(s), np.array(v).reshape(s), np.array(w).reshape(s)
+    return (np.array(xx).reshape(s), np.array(yy).reshape(s), np.array(zz).reshape(s),
+            np.array(u).reshape(s), np.array(v).reshape(s), np.array(w).reshape(s))
 
 
 def read_input_files(dir):
