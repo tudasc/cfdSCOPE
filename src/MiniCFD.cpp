@@ -12,73 +12,6 @@
 
 using ScalarT = double;
 
-/**
- * Helper classs to build blocked matrices using the existing SparseMatrix
- * class.
- */
-template <typename T>
-struct BlockMatBuilder {
-
-    BlockMatBuilder<T>(size_t rows, size_t cols, size_t blockRows,
-                       size_t blockCols)
-        : rows(rows), cols(cols), blockRows(blockRows), blockCols(blockCols) {
-        currentBlock.resize(blockRows * blockCols);
-    }
-
-    void finishBlock(size_t bi, size_t bj) {
-        size_t idx;
-        for (size_t i = 0; i < blockRows; i++) {
-            for (size_t j = 0; j < blockCols; i++) {
-                entries.push_back({bi * blockRows + i, bj * blockCols + j,
-                                   currentBlock[idx]});
-                idx++;
-            }
-        }
-    }
-
-    T& operator()(size_t i, size_t j) {
-        assert("Access ouside of block bounds" && i >= 0 && i < blockRows &&
-               j >= 0 && j < blockCols);
-        return currentBlock[i * blockRows + j];
-    }
-
-    SparseMatrix<T> generate() const {
-        return SparseMatrix<T>(rows, cols, entries);
-    }
-
-  private:
-    size_t rows;
-    size_t cols;
-    size_t blockRows;
-    size_t blockCols;
-    std::vector<T> currentBlock;
-    std::vector<SparseMatrixEntry<T>> entries;
-};
-
-template <typename T>
-inline SparseMatrix<T> evalTransportJacobian(const VelocityField<T>& U) {
-    size_t nPoints = U.getGrid()->getCellCount();
-    BlockMatBuilder<T> builder(nPoints * 3, nPoints * 3, 3, 3);
-    for (size_t i = 0; i < U.getWidth(); i++) {
-        for (size_t j = 0; j < U.getHeight(); i++) {
-            for (size_t k = 0; k < U.getDepth(); i++) {
-                builder(0, 0) = U.dudx(i, j, k);
-                builder(0, 1) = U.dudy(i, j, k);
-                builder(0, 2) = U.dudz(i, j, k);
-                builder(1, 0) = U.dvdx(i, j, k);
-                builder(1, 1) = U.dvdy(i, j, k);
-                builder(1, 2) = U.dvdz(i, j, k);
-                builder(2, 0) = U.dwdx(i, j, k);
-                builder(2, 1) = U.dwdy(i, j, k);
-                builder(2, 2) = U.dwdz(i, j, k);
-                builder.finishBlock(U.getGrid()->cellIndex(i, j, k),
-                                    U.getGrid()->cellIndex(i, j, k));
-            }
-        }
-    }
-    return builder.generate();
-}
-
 template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
     Vector<T> transportEq(U.getNumValues());
@@ -380,10 +313,6 @@ int main(int argc, char** argv) {
         *U = U_corr;
         *p = p_new;
     }
-
-    // - Validation
-
-    // - Visualization
 
     return 0;
 }

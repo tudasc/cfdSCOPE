@@ -10,6 +10,7 @@
 #include <iostream>
 
 /**
+    Conjugate gradient solver
     https://en.wikipedia.org/wiki/Conjugate_gradient_method
 */
 template <typename T>

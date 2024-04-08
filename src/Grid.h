@@ -4,27 +4,6 @@
 #include "Vector.h"
 #include <memory>
 
-/**
- * TODO: Implement.
- * For Cavity problem: Dirichlet boundary condiditions for velocity, Neumann for
- * pressure.
- */
-class BoundaryCondition {
-  public:
-};
-
-enum BCType { DIRICHLET, NEUMANN };
-
-enum Boundaries {
-    LEFT,
-    RIGHT,
-    TOP,
-    DOWN,
-    FRONT,
-    BACK,
-    NUM_BOUNDARIES = BACK + 1
-};
-
 // "indexing helper"
 template <typename T>
 class Grid {
@@ -33,9 +12,6 @@ class Grid {
     size_t depth;
 
     T cellSize;
-
-    // Vector<T> p;
-    // Vector<T> v;
 
   public:
     Grid(size_t width, size_t height, size_t depth, T cellSize)
@@ -87,33 +63,6 @@ class Grid {
         return pos;
     }
 };
-
-// template <typename T>
-// class Field {
-//     std::shared_ptr<Grid<T>> grid;
-//     Vector<T> field;
-// public:
-//     Field(std::shared_ptr<Grid<T>> grid)
-//         : grid(grid), field(grid->getCellCount()) {}
-
-//     const T& getPressure(size_t x, size_t y, size_t z) const {
-//         return field[grid->cellIndex(x, y, z)];
-//     }
-
-//     void setPressure(size_t x, size_t y, size_t z, const T& val) {
-//         field[grid->cellIndex(x, y, z)] = val;
-//     }
-
-//     size_t getWidth() const { return grid->getWidth(); }
-
-//     size_t getHeight() const { return grid->getHeight(); }
-
-//     size_t getDepth() const { return grid->getDepth(); }
-
-//     T getCellSize() const { return grid->getCellSize(); }
-
-//     Vec3<T> div(size_t x, size_t y) const {}
-// }
 
 template <typename T>
 class PressureField {
@@ -172,7 +121,6 @@ template <typename T>
 class VelocityField {
     std::shared_ptr<Grid<T>> grid;
     Vector<T> field;
-    BoundaryCondition bcs[Boundaries::NUM_BOUNDARIES];
 
   public:
     VelocityField(std::shared_ptr<Grid<T>> grid)
