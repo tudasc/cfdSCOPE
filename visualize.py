@@ -8,8 +8,8 @@ import argparse
 from tqdm import tqdm
 import scipy.interpolate
 
-#quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.3}
-quiver_size_args = {'length': 1.5,'normalize':True}
+# quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.3}
+quiver_size_args = {'length': 1.5, 'normalize': True}
 
 # to show a progress bar during rendering
 progress_bar = None
@@ -81,25 +81,28 @@ def read_3d_input_data(filename):
 
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
 
-    # pressure would be the 0th value, but we don't visualize it
-    # the pressure array would contain one nan for each line in the file that needs to be removed
-    # ( this happens due to the trailing comma)
-    # p = data[:, 0:-1:4]
-    # p = p.reshape(num_x, num_y, num_z)
-    # p is not needed but this would be the correct code to read it in
-    u = data[:, 1::4]  # every 4th value is u
-    # Reshape into the correct shape
-    u = u.reshape(num_x, num_y, num_z)
-    v = data[:, 2::4]
-    v = v.reshape(num_x, num_y, num_z)
-    w = data[:, 3::4]
-    w = w.reshape(num_x, num_y, num_z)
+    xx = []
+    yy = []
+    zz = []
+    p = []
+    u = []
+    v = []
+    w = []
+    for z in range(num_z):
+        for y in range(num_y):
+            for x in range(num_x):
+                xx.append(x * resolution)
+                yy.append(y * resolution)
+                zz.append(z * resolution)
 
-    x, y, z = np.meshgrid(np.linspace(0, resolution * num_x, num_x),
-                          np.linspace(0, resolution * num_y, num_y),
-                          np.linspace(0, resolution * num_z, num_z))
+                p.append(data[z * num_y + y, x * 4 + 0])
+                u.append(data[z * num_y + y, x * 4 + 1])
+                v.append(data[z * num_y + y, x * 4 + 2])
+                w.append(data[z * num_y + y, x * 4 + 3])
 
-    return x, y, z, u, v, w
+    s =(num_x,num_y,num_z)
+
+    return np.array(xx).reshape(s), np.array(yy).reshape(s), np.array(zz).reshape(s), np.array(u).reshape(s), np.array(v).reshape(s), np.array(w).reshape(s)
 
 
 def read_input_files(dir):
@@ -118,7 +121,6 @@ def read_input_files(dir):
     dict_items_sorted = sorted(list(result.items()), key=lambda x: x[0])
 
     return [elem[1] for elem in dict_items_sorted]
-
 
 
 def generate_animation_data_3d(data, nth_point, num_slices=100, slice_step=10, movement_factor=0.1):
