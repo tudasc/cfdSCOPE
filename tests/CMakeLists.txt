@@ -16,6 +16,7 @@ add_executable(
         lingalg_basics_tests.cpp
         solver_tests.cpp
         io_basic_test.cpp
+        trilerp_tests.cpp
 )
 
 target_include_directories(

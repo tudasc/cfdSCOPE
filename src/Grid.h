@@ -180,9 +180,7 @@ class VelocityField {
 
     VelocityField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
         : grid(grid), field(grid->getCellCount() * 3) {
-        if (values.getSize() != grid->getCellCount() * 3) {
-            // TODO: Error handling
-        }
+        assert(values.getSize() == grid->getCellCount() * 3);
         field = std::move(values);
     }
 
@@ -304,8 +302,8 @@ class VelocityField {
         float su = (pos.y / cellSize - 0.5) - ju;
         float tu = (pos.z / cellSize - 0.5) - ku;
 
-        T u00 = (1 - ru) * getLeftU(iu, ju, ku);
-        +ru* getRightU(iu, ju, ku);
+        T u00 = (1 - ru) * getLeftU(iu, ju, ku)
+                    +ru*   getRightU(iu, ju, ku);
         T u01 = (1 - ru) * getLeftU(iu, ju + 1, ku) +
                 ru * getRightU(iu, ju + 1, ku);
         T u10 = (1 - ru) * getLeftU(iu, ju, ku + 1) +
@@ -325,8 +323,8 @@ class VelocityField {
         float sv = (pos.y / cellSize) - jv;
         float tv = (pos.z / cellSize - 0.5) - kv;
 
-        T v00 = (1 - rv) * getTopV(iv, jv, kv);
-        +rv* getTopV(iv + 1, jv, kv);
+        T v00 = (1 - rv) * getTopV(iv, jv, kv)
+                    +rv  * getTopV(iv + 1, jv, kv);
         T v01 = (1 - rv) * getTopV(iv, jv + 1, kv) +
                 rv * getTopV(iv + 1, jv + 1, kv);
         T v10 = (1 - rv) * getTopV(iv, jv, kv + 1) +
@@ -346,8 +344,8 @@ class VelocityField {
         float sw = (pos.y / cellSize - 0.5) - jw;
         float tw = (pos.z / cellSize) - kw;
 
-        T w00 = (1 - rw) * getFrontW(iw, jw, kw);
-        +rw* getFrontW(iw + 1, jw, kw);
+        T w00 = (1 - rw) * getFrontW(iw, jw, kw)
+                    +rw  * getFrontW(iw + 1, jw, kw);
         T w01 = (1 - rw) * getFrontW(iw, jw + 1, kw) +
                 rw * getFrontW(iw + 1, jw + 1, kw);
         T w10 = (1 - rw) * getFrontW(iw, jw, kw + 1) +
