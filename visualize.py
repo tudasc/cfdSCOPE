@@ -8,8 +8,8 @@ import argparse
 from tqdm import tqdm
 import scipy.interpolate
 
-# quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.1}
-quiver_size_args = {}
+#quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.3}
+quiver_size_args = {'length': 1.5,'normalize':True}
 
 # to show a progress bar during rendering
 progress_bar = None
@@ -120,39 +120,21 @@ def read_input_files(dir):
     return [elem[1] for elem in dict_items_sorted]
 
 
-# interpolates the arrow movement for animation
-# moves the arrow according to the forces and interpolates the new force at the result position
-# does not change or "calculate" any forces, it is just used to visualize the existing force field with movement
-def interpolate_movement_3d(data, xx, yy, zz, num_slices=100, slice_step=10, movement_factor=0.1):
-    result = []
-    xx=xx.ravel()
-    yy = yy.ravel()
-    zz = zz.ravel()
-    result.append((xx, yy, zz))  # starting position
-    print("Interpolating movement:")
-    progress_bar = tqdm(total=num_slices * len(data))
 
-    target_shape = xx.shape
-    assert xx.shape == yy.shape == zz.shape
+def generate_animation_data_3d(data, nth_point, num_slices=100, slice_step=10, movement_factor=0.1):
+    result = []
 
     for x, y, z, u, v, w in data:
-        # interpolation of particle forces
-        u_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), u.ravel())
-        v_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), v.ravel())
-        w_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), w.ravel())
+        xx = x[0::nth_point, 0::nth_point, 0::nth_point]
+        yy = y[0::nth_point, 0::nth_point, 0::nth_point]
+        zz = z[0::nth_point, 0::nth_point, 0::nth_point]
+
+        uu = u[0::nth_point, 0::nth_point, 0::nth_point]
+        vv = v[0::nth_point, 0::nth_point, 0::nth_point]
+        ww = w[0::nth_point, 0::nth_point, 0::nth_point]
+
         for i in range(num_slices):
-            # uu = u_interp((xx.ravel(), yy.ravel(), zz.ravel())).reshape(target_shape)
-            # vv = v_interp((xx.ravel(), yy.ravel(), zz.ravel())).reshape(target_shape)
-            # ww = w_interp((xx.ravel(), yy.ravel(), zz.ravel())).reshape(target_shape)
-            uu = u_interp((xx,yy,zz))
-            vv = v_interp((xx,yy,zz))
-            ww = w_interp((xx,yy,zz))
-            # move particles in plot
-            xx = xx + uu
-            yy = yy + vv
-            zz = zz + ww
-            result.append((xx, yy, zz))  # resulting position
-            progress_bar.update(1)
+            result.append((xx, yy, zz, uu, vv, ww))
 
     return result
 
@@ -185,7 +167,7 @@ def plot_3d(data, frames, nth_point, outfile):
     xx = x[0::nth_point, 0::nth_point, 0::nth_point]
     yy = y[0::nth_point, 0::nth_point, 0::nth_point]
     zz = z[0::nth_point, 0::nth_point, 0::nth_point]
-    data = interpolate_movement_3d(data, xx, yy, zz, num_slices=frames, slice_step=nth_point)
+    data = generate_animation_data_3d(data, nth_point, num_slices=frames, slice_step=nth_point)
 
     # don't show arrows moving out of bounds
     xlim = x.max()
@@ -194,15 +176,15 @@ def plot_3d(data, frames, nth_point, outfile):
 
     def animate(i, plot_data, xlim, ylim, zlim):
         ax.clear()
-        x, y, z = plot_data[i]
+        x, y, z, u, v, w = plot_data[i]
 
         ax.set_xlim([0, xlim])
         ax.set_ylim([0, ylim])
         ax.set_zlim([0, zlim])
 
-        s = ax.scatter(x, y, z, marker='.')
+        q = ax.quiver(x, y, z, u, v, w, **quiver_size_args)
 
-        return s,
+        return q,
 
     print("Render Animation:")
     global progress_bar
