@@ -53,7 +53,7 @@ def main():
         if ARGS.static:
             plot_3d_static(x, y, z, u, v, w, ARGS.nth_point, ARGS.output)
         else:
-            plot_3d(x, y, z, u, v, w, ARGS.frames, ARGS.nth_point, ARGS.output)
+            plot_3d(data, ARGS.frames, ARGS.nth_point, ARGS.output)
 
     print("Visualization written to %s" % ARGS.output)
 
@@ -123,45 +123,36 @@ def read_input_files(dir):
 # interpolates the arrow movement for animation
 # moves the arrow according to the forces and interpolates the new force at the result position
 # does not change or "calculate" any forces, it is just used to visualize the existing force field with movement
-def interpolate_movement_3d(x, y, z, u, v, w, num_slices=100, slice_step=10, movement_factor=0.1):
-    # Reshape u, v for interpolation
-    u_known_reshaped = u.reshape(-1)
-    v_known_reshaped = v.reshape(-1)
-    w_known_reshaped = w.reshape(-1)
-    points = np.column_stack((x.ravel(), y.ravel(), z.ravel()))
-
-    xx = x[0::slice_step, 0::slice_step, 0::slice_step]
-    yy = y[0::slice_step, 0::slice_step, 0::slice_step]
-    zz = z[0::slice_step, 0::slice_step, 0::slice_step]
-    uu = u[0::slice_step, 0::slice_step, 0::slice_step]
-    vv = v[0::slice_step, 0::slice_step, 0::slice_step]
-    ww = v[0::slice_step, 0::slice_step, 0::slice_step]
-
+def interpolate_movement_3d(data, xx, yy, zz, num_slices=100, slice_step=10, movement_factor=0.1):
     result = []
-    result.append((xx, yy, zz, uu, vv, ww))
+    xx=xx.ravel()
+    yy = yy.ravel()
+    zz = zz.ravel()
+    result.append((xx, yy, zz))  # starting position
     print("Interpolating movement:")
-    for i in tqdm(range(num_slices)):
-        x_new = xx + uu * movement_factor
-        y_new = yy + vv * movement_factor
-        z_new = zz + ww * movement_factor
-        new_points = np.column_stack((x_new.ravel(), y_new.ravel(), z_new.ravel()))
-        # Interpolate new x,y,z to find corresponding u,v,w
-        u_new = scipy.interpolate.griddata(points, u_known_reshaped, new_points, method='nearest')
-        v_new = scipy.interpolate.griddata(points, v_known_reshaped, new_points, method='nearest')
-        w_new = scipy.interpolate.griddata(points, w_known_reshaped, new_points, method='nearest')
+    progress_bar = tqdm(total=num_slices * len(data))
 
-        # Reshape interpolated u, v
-        u_new = u_new.reshape(x_new.shape)
-        v_new = v_new.reshape(y_new.shape)
-        w_new = w_new.reshape(z_new.shape)
+    target_shape = xx.shape
+    assert xx.shape == yy.shape == zz.shape
 
-        xx = x_new
-        yy = y_new
-        zz = z_new
-        uu = u_new
-        vv = v_new
-        ww = w_new
-        result.append((xx, yy, zz, uu, vv, ww))
+    for x, y, z, u, v, w in data:
+        # interpolation of particle forces
+        u_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), u.ravel())
+        v_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), v.ravel())
+        w_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), w.ravel())
+        for i in range(num_slices):
+            # uu = u_interp((xx.ravel(), yy.ravel(), zz.ravel())).reshape(target_shape)
+            # vv = v_interp((xx.ravel(), yy.ravel(), zz.ravel())).reshape(target_shape)
+            # ww = w_interp((xx.ravel(), yy.ravel(), zz.ravel())).reshape(target_shape)
+            uu = u_interp((xx,yy,zz))
+            vv = v_interp((xx,yy,zz))
+            ww = w_interp((xx,yy,zz))
+            # move particles in plot
+            xx = xx + uu
+            yy = yy + vv
+            zz = zz + ww
+            result.append((xx, yy, zz))  # resulting position
+            progress_bar.update(1)
 
     return result
 
@@ -181,12 +172,20 @@ def plot_3d_static(x, y, z, u, v, w, nth_point, outfile):  #
 
 
 # generate a 3D animation
-def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
+def plot_3d(data, frames, nth_point, outfile):
     # 3D
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
-    data = interpolate_movement_3d(x, y, z, u, v, w, num_slices=frames, slice_step=nth_point)
+    x = data[0][0]
+    y = data[0][1]
+    z = data[0][2]
+
+    # take the sample of points to visualize
+    xx = x[0::nth_point, 0::nth_point, 0::nth_point]
+    yy = y[0::nth_point, 0::nth_point, 0::nth_point]
+    zz = z[0::nth_point, 0::nth_point, 0::nth_point]
+    data = interpolate_movement_3d(data, xx, yy, zz, num_slices=frames, slice_step=nth_point)
 
     # don't show arrows moving out of bounds
     xlim = x.max()
@@ -195,7 +194,7 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
 
     def animate(i, plot_data, xlim, ylim, zlim):
         ax.clear()
-        x, y, z, u, v, w = plot_data[i]
+        x, y, z = plot_data[i]
 
         ax.set_xlim([0, xlim])
         ax.set_ylim([0, ylim])
@@ -207,9 +206,9 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
 
     print("Render Animation:")
     global progress_bar
-    progress_bar = tqdm(total=frames)
+    progress_bar = tqdm(total=len(data))
 
-    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=frames,
+    ani = FuncAnimation(fig, animate, interval=40, blit=True, repeat=True, frames=len(data),
                         fargs=[data, xlim, ylim, zlim])
     ani.save(outfile, dpi=300, writer=PillowWriter(fps=25), progress_callback=progress_callback_func)
 
