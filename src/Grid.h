@@ -233,7 +233,7 @@ class VelocityField {
     }
 
     T getBackW(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y, z+1)) {
+        if (!grid->inBounds(x, y, z + 1)) {
             // TODO: BC
             return 0;
         }
@@ -286,14 +286,15 @@ class VelocityField {
     std::shared_ptr<Grid<T>> getGrid() const { return grid; }
 
     /**
-    * Trilinear interpolation of the velocity field at pos.
-    * We assume all wall boundaries. For points outside of the domain, we use the value of the closest point within the domain.
-    */
+     * Trilinear interpolation of the velocity field at pos.
+     * We assume all wall boundaries. For points outside of the domain, we use
+     * the value of the closest point within the domain.
+     */
     Vec3<T> trilerp(Vec3<T> pos) const {
 
         auto cellSize = getCellSize();
 
-        pos = grid->getNearestInsidePos(pos);        
+        pos = grid->getNearestInsidePos(pos);
 
         int iu = (int)(pos.x / cellSize);
         int ju = (int)(pos.y / cellSize - 0.5);
@@ -302,8 +303,7 @@ class VelocityField {
         float su = (pos.y / cellSize - 0.5) - ju;
         float tu = (pos.z / cellSize - 0.5) - ku;
 
-        T u00 = (1 - ru) * getLeftU(iu, ju, ku)
-                    +ru*   getRightU(iu, ju, ku);
+        T u00 = (1 - ru) * getLeftU(iu, ju, ku) + ru * getRightU(iu, ju, ku);
         T u01 = (1 - ru) * getLeftU(iu, ju + 1, ku) +
                 ru * getRightU(iu, ju + 1, ku);
         T u10 = (1 - ru) * getLeftU(iu, ju, ku + 1) +
@@ -323,8 +323,7 @@ class VelocityField {
         float sv = (pos.y / cellSize) - jv;
         float tv = (pos.z / cellSize - 0.5) - kv;
 
-        T v00 = (1 - rv) * getTopV(iv, jv, kv)
-                    +rv  * getTopV(iv + 1, jv, kv);
+        T v00 = (1 - rv) * getTopV(iv, jv, kv) + rv * getTopV(iv + 1, jv, kv);
         T v01 = (1 - rv) * getTopV(iv, jv + 1, kv) +
                 rv * getTopV(iv + 1, jv + 1, kv);
         T v10 = (1 - rv) * getTopV(iv, jv, kv + 1) +
@@ -344,8 +343,8 @@ class VelocityField {
         float sw = (pos.y / cellSize - 0.5) - jw;
         float tw = (pos.z / cellSize) - kw;
 
-        T w00 = (1 - rw) * getFrontW(iw, jw, kw)
-                    +rw  * getFrontW(iw + 1, jw, kw);
+        T w00 =
+            (1 - rw) * getFrontW(iw, jw, kw) + rw * getFrontW(iw + 1, jw, kw);
         T w01 = (1 - rw) * getFrontW(iw, jw + 1, kw) +
                 rw * getFrontW(iw + 1, jw + 1, kw);
         T w10 = (1 - rw) * getFrontW(iw, jw, kw + 1) +
