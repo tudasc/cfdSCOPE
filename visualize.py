@@ -1,3 +1,6 @@
+import os
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
@@ -37,7 +40,8 @@ def main():
 
     ARGS = parser.parse_args()
 
-    x, y, z, u, v, w = read_3d_input_data(ARGS.input)
+    # x, y, z, u, v, w = read_3d_input_data(ARGS.input)
+    data = read_input_files(ARGS.input)
 
     if ARGS.two_d:
         x, y, u, v = get_2d_from_3d(x, y, z, u, v, w, ARGS.slice_dim, ARGS.slice_point)
@@ -96,6 +100,24 @@ def read_3d_input_data(filename):
                           np.linspace(0, resolution * num_z, num_z))
 
     return x, y, z, u, v, w
+
+
+def read_input_files(dir):
+    pattern = r"fields_(\d+)\.txt"
+
+    result = {}
+    for fname in os.listdir(dir):
+        match = re.match(pattern, fname)
+        if match:
+            index = int(match.group(1))  # Extract the index as an integer
+            data = read_3d_input_data(os.path.join(dir, fname))
+            assert index not in result  # not read same file twice
+            result[index] = data
+
+    # Sort the list of tuples based on keys
+    dict_items_sorted = sorted(list(result.items()), key=lambda x: x[0])
+
+    return [elem[1] for elem in dict_items_sorted]
 
 
 # interpolates the arrow movement for animation
