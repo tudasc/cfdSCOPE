@@ -5,7 +5,8 @@ import argparse
 from tqdm import tqdm
 import scipy.interpolate
 
-quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.1}
+# quiver_size_args = {'length': 0.5, 'arrow_length_ratio': 0.1}
+quiver_size_args = {}
 
 # to show a progress bar during rendering
 progress_bar = None
@@ -178,9 +179,9 @@ def plot_3d(x, y, z, u, v, w, frames, nth_point, outfile):
         ax.set_ylim([0, ylim])
         ax.set_zlim([0, zlim])
 
-        q = ax.quiver(x, y, z, u, v, w)
+        s = ax.scatter(x, y, z, marker='.')
 
-        return q,
+        return s,
 
     print("Render Animation:")
     global progress_bar
@@ -267,9 +268,9 @@ def plot_2d(x, y, u, v, frames, nth_point, outfile):
         ax.set_xlim([0, xlim])
         ax.set_ylim([0, ylim])
 
-        q = ax.quiver(x, y, u, v, np.linalg.norm((v, u)))
+        s = ax.scatter(x, y, z, marker='.')
 
-        return q,
+        return s,
 
     print("Render Animation:")
     global progress_bar
