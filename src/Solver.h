@@ -18,7 +18,7 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
     Vector<T> x(b.getSize());
     T tol = 1e-8; // std::numeric_limits<T>::epsilon();
 
-    auto maxIter = 100;
+    auto maxIter = 1000;
 
     // Initialize residual vector
     Vector<T> residual = b - A.spmv(x);

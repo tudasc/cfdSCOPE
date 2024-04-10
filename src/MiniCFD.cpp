@@ -243,6 +243,38 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
     return U_corr;
 }
 
+/**
+* Applying a constant force (e.g. wind) on the fluid surface.
+*/
+template<typename T>
+inline VelocityField<T> applyForces(const VelocityField<T>& U,
+                                                double dt) {
+
+    auto width = U.getWidth();
+    auto height = U.getHeight();
+    auto depth = U.getDepth();
+
+    auto cellSize = U.getCellSize();
+
+
+    float maxForce = 1;
+
+    VelocityField<T> U_f = U;
+
+    for (size_t i = 1; i < width; i++) { // Starting with i=1 to respect boundary condition
+        for (size_t j = 0; j < height; j++) {
+            for (size_t k = 0; k < depth; k++) {
+                auto distToSurface = j * cellSize;
+                auto f = maxForce * std::exp(-distToSurface);           
+                auto oldU = U_f.getLeftU(i, j, k);
+                auto newU = oldU + dt * f;  // Assuming density rho = 1
+                U_f.setLeftU(i, j, k, newU);                
+            }
+        }
+    }
+    return U_f;
+}
+
 int main(int argc, char** argv) {
     // Command line parsing
     cxxopts::Options options("MiniCFD",
@@ -309,9 +341,6 @@ int main(int argc, char** argv) {
                 U->setTopV(i, j, k, 0);
                 U->setFrontW(i, j, k, 0);
                 p->setPressure(i, j, k, 1);
-                if (j == 0 && i > 0) {
-                    U->setLeftU(i, j, k, 1);
-                }
             }
         }
     }
@@ -330,9 +359,15 @@ int main(int argc, char** argv) {
         SPDLOG_TRACE("Initial U_x field:\n{}",
                      dumpVectorComponent(U->getRawValues(), 0, 3));
 
+        // - External forces
+        spdlog::debug("Applying external forces");
+        auto U_f = applyForces(*U, dt);
+        SPDLOG_TRACE("U_x after forces:\n{}",
+                     dumpVectorComponent(U_f.getRawValues(), 0, 3));
+
         // - Solve advection
         spdlog::debug("Solving advection equation");
-        auto U_adv = solveAdvection(*U, dt);
+        auto U_adv = solveAdvection(U_f, dt);
 
         SPDLOG_TRACE("U_x after advection:\n{}",
                      dumpVectorComponent(U_adv.getRawValues(), 0, 3));
