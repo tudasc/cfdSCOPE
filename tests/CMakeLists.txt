@@ -33,6 +33,7 @@ target_compile_definitions(
 
 target_link_libraries(
         MiniCFD_tests
+        PRIVATE spdlog::spdlog_header_only
         GTest::gtest_main
 )
 

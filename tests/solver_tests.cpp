@@ -29,4 +29,3 @@ TEST(SolverTests, ConjugateGradient3x3) {
     EXPECT_NEAR(x[1], 0.0584342, 0.001);
     EXPECT_NEAR(x[2], -0.00210156, 0.001);
 }
- 

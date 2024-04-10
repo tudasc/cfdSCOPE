@@ -3,81 +3,20 @@
 #include "IO.h"
 #include "Matrix.h"
 #include "Solver.h"
-#include "Vector.h"
 #include "Util.h"
+#include "Vector.h"
+
+#include "spdlog/cfg/env.h"
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
+#include <cxxopts.hpp>
+
 #include <array>
 #include <exception>
 #include <iostream>
 #include <memory>
 
 using ScalarT = double;
-
-/**
- * Helper classs to build blocked matrices using the existing SparseMatrix
- * class.
- */
-template <typename T>
-struct BlockMatBuilder {
-
-    BlockMatBuilder<T>(size_t rows, size_t cols, size_t blockRows,
-                       size_t blockCols)
-        : rows(rows), cols(cols), blockRows(blockRows), blockCols(blockCols) {
-        currentBlock.resize(blockRows * blockCols);
-    }
-
-    void finishBlock(size_t bi, size_t bj) {
-        size_t idx;
-        for (size_t i = 0; i < blockRows; i++) {
-            for (size_t j = 0; j < blockCols; i++) {
-                entries.push_back({bi * blockRows + i, bj * blockCols + j,
-                                   currentBlock[idx]});
-                idx++;
-            }
-        }
-    }
-
-    T& operator()(size_t i, size_t j) {
-        assert("Access ouside of block bounds" && i >= 0 && i < blockRows &&
-               j >= 0 && j < blockCols);
-        return currentBlock[i * blockRows + j];
-    }
-
-    SparseMatrix<T> generate() const {
-        return SparseMatrix<T>(rows, cols, entries);
-    }
-
-  private:
-    size_t rows;
-    size_t cols;
-    size_t blockRows;
-    size_t blockCols;
-    std::vector<T> currentBlock;
-    std::vector<SparseMatrixEntry<T>> entries;
-};
-
-template <typename T>
-inline SparseMatrix<T> evalTransportJacobian(const VelocityField<T>& U) {
-    size_t nPoints = U.getGrid()->getCellCount();
-    BlockMatBuilder<T> builder(nPoints * 3, nPoints * 3, 3, 3);
-    for (size_t i = 0; i < U.getWidth(); i++) {
-        for (size_t j = 0; j < U.getHeight(); i++) {
-            for (size_t k = 0; k < U.getDepth(); i++) {
-                builder(0, 0) = U.dudx(i, j, k);
-                builder(0, 1) = U.dudy(i, j, k);
-                builder(0, 2) = U.dudz(i, j, k);
-                builder(1, 0) = U.dvdx(i, j, k);
-                builder(1, 1) = U.dvdy(i, j, k);
-                builder(1, 2) = U.dvdz(i, j, k);
-                builder(2, 0) = U.dwdx(i, j, k);
-                builder(2, 1) = U.dwdy(i, j, k);
-                builder(2, 2) = U.dwdz(i, j, k);
-                builder.finishBlock(U.getGrid()->cellIndex(i, j, k),
-                                    U.getGrid()->cellIndex(i, j, k));
-            }
-        }
-    }
-    return builder.generate();
-}
 
 template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
@@ -124,20 +63,24 @@ inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
             for (size_t k = 0; k < U.getDepth(); k++) {
                 // u is on boundary for i = 0
                 if (i > 0) {
-                    Vec3<T> pu{i * cellSize, (j + 0.5) * cellSize, (k + 0.5) * cellSize};
+                    Vec3<T> pu{i * cellSize, (j + 0.5) * cellSize,
+                               (k + 0.5) * cellSize};
                     auto pu_origin = traceBackward(pu, U, dt);
                     U_adv.setLeftU(i, j, k, U.trilerp(pu_origin).x);
-                    std::cout << "Cell at " << pu.x << ", " << pu.y << ", " << pu.z <<":  u comes from " << pu_origin.x << "\n";
+                    SPDLOG_TRACE("Cell at {}, {}, {}:  x comes from {}", pu.x,
+                                 pu.y, pu.z, pu_origin.x);
                 }
                 // v is on boundary for j = 0
                 if (j > 0) {
-                    Vec3<T> pv{(i + 0.5) * cellSize, j * cellSize, (k + 0.5) * cellSize};
+                    Vec3<T> pv{(i + 0.5) * cellSize, j * cellSize,
+                               (k + 0.5) * cellSize};
                     auto pv_origin = traceBackward(pv, U, dt);
                     U_adv.setTopV(i, j, k, U.trilerp(pv_origin).y);
                 }
                 // w is on boundary for k = 0
                 if (k > 0) {
-                    Vec3<T> pw{(i + 0.5) * cellSize, (j + 0.5) * cellSize, k * cellSize};
+                    Vec3<T> pw{(i + 0.5) * cellSize, (j + 0.5) * cellSize,
+                               k * cellSize};
                     auto pw_origin = traceBackward(pw, U, dt);
                     U_adv.setFrontW(i, j, k, U.trilerp(pw_origin).z);
                 }
@@ -183,7 +126,7 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
             for (size_t i = 0; i < width; i++) {
 
                 size_t idx = grid.cellIndex(i, j, k);
-            
+
                 // Right side
                 auto U_div_ijk = U_adv.div(i, j, k);
                 b[idx] = -(1.0 / dt) * U_div_ijk;
@@ -194,57 +137,59 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                 // Matrix coefficients
                 if (i >= 1) {
                     assert(idx >= 1);
-                    coeffs.push_back({idx, grid.cellIndex(i-1,j,k), kNeighbor});
+                    coeffs.push_back(
+                        {idx, grid.cellIndex(i - 1, j, k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Left BC
                 }
                 if (i < width - 1) {
-                    coeffs.push_back({idx, grid.cellIndex(i+1,j,k), kNeighbor});
+                    coeffs.push_back(
+                        {idx, grid.cellIndex(i + 1, j, k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Right BC
                 }
                 if (j >= 1) {
                     assert(idx >= width);
-                    coeffs.push_back({idx, grid.cellIndex(i,j-1,k), kNeighbor});
+                    coeffs.push_back(
+                        {idx, grid.cellIndex(i, j - 1, k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Top BC
                 }
                 if (j < height - 1) {
-                    coeffs.push_back({idx, grid.cellIndex(i,j+1,k), kNeighbor});
+                    coeffs.push_back(
+                        {idx, grid.cellIndex(i, j + 1, k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Bottom BC
                 }
                 if (k >= 1) {
                     assert(idx >= width * height);
-                    coeffs.push_back({idx, grid.cellIndex(i,j,k-1), kNeighbor});
+                    coeffs.push_back(
+                        {idx, grid.cellIndex(i, j, k - 1), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Front BC
                 }
                 if (k < depth - 1) {
-                    coeffs.push_back({idx, grid.cellIndex(i,j,k+1), kNeighbor});
+                    coeffs.push_back(
+                        {idx, grid.cellIndex(i, j, k + 1), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Back BC
                 }
                 coeffs.push_back({idx, idx, numRowEntries * kMiddle});
 
-                std::cout << "Cell (" << i << ", " << j << ", " << k <<"):  neighbors=" <<  numRowEntries << ", div=" << U_div_ijk << "\n";
+                SPDLOG_TRACE("Cell ({}, {}, {}): neighbors={}, div={}", i, j, k,
+                             numRowEntries, U_div_ijk);
             }
         }
     }
     SparseMatrix<T> A(size, size, coeffs);
 
-    // dumpMatrix(A);
-    // std::cout << "-----------\n";
-    // dumpVector(b);
-    //exit(0);
-
-    std::cout << "Running PCG\n";
+    SPDLOG_TRACE("Running PCG");
     Vector<T> p_new = pcg(A, b);
     return {p.getGrid(), p_new};
 }
@@ -267,26 +212,29 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
             for (size_t k = 0; k < depth; k++) {
                 // u is on boundary for i = 0
                 if (i > 0) {
-                    auto u =
-                        U_adv.getLeftU(i, j, k) -
-                        dt * (p.getPressure(i, j, k) - p.getPressure(i - 1, j, k)) /
-                        cellSize;
+                    auto u = U_adv.getLeftU(i, j, k) -
+                             dt *
+                                 (p.getPressure(i, j, k) -
+                                  p.getPressure(i - 1, j, k)) /
+                                 cellSize;
                     U_corr.setLeftU(i, j, k, u);
                 }
                 // v is on boundary for j = 0
                 if (j > 0) {
-                    auto v =
-                        U_adv.getTopV(i, j, k) -
-                        dt * (p.getPressure(i, j, k) - p.getPressure(i, j - 1, k)) /
-                            cellSize;
+                    auto v = U_adv.getTopV(i, j, k) -
+                             dt *
+                                 (p.getPressure(i, j, k) -
+                                  p.getPressure(i, j - 1, k)) /
+                                 cellSize;
                     U_corr.setTopV(i, j, k, v);
                 }
                 // w is on boundary for k = 0
                 if (k > 0) {
-                    auto w =
-                        U_adv.getFrontW(i, j, k) -
-                        dt * (p.getPressure(i, j, k) - p.getPressure(i, j, k - 1)) /
-                            cellSize;
+                    auto w = U_adv.getFrontW(i, j, k) -
+                             dt *
+                                 (p.getPressure(i, j, k) -
+                                  p.getPressure(i, j, k - 1)) /
+                                 cellSize;
                     U_corr.setFrontW(i, j, k, w);
                 }
             }
@@ -296,16 +244,58 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 }
 
 int main(int argc, char** argv) {
-    // Command line parsing (later)
+    // Command line parsing
+    cxxopts::Options options("MiniCFD",
+                             "Simple CFD simulation for didactic purposes.");
 
-    auto N = 20;
+    // clang-format off
+    options.add_options()
+        ("l,log-level", "Log level (trace, debug, info, warn, err, critical or off)", cxxopts::value<std::string>()->default_value("info"))
+        ("d,domain-size", "Number of the simulation cells along all three axes", cxxopts::value<size_t>()->default_value("10"))
+        ("c,cell-size", "Size of each simulation cell", cxxopts::value<ScalarT>()->default_value("1.0"))
+        ("e,end-time", "Simulation duration (seconds)", cxxopts::value<double>()->default_value("1.0"))
+        ("s,step-size", "Simulation step size (seconds)", cxxopts::value<double>()->default_value("0.05"))
+        ("p,output-prefix", "Output file prefix", cxxopts::value<std::string>()->default_value("fields"))
+        ("h,help", "Print usage")
+    ;
+    // clang-format on
+    auto args = options.parse(argc, argv);
+    if (args.count("help")) {
+        std::cout << options.help() << std::endl;
+        exit(0);
+    }
 
+    const std::string logLevel = args["log-level"].as<std::string>();
+    if (logLevel == "trace") {
+        spdlog::set_level(spdlog::level::trace);
+    } else if (logLevel == "debug") {
+        spdlog::set_level(spdlog::level::debug);
+    } else if (logLevel == "info") {
+        spdlog::set_level(spdlog::level::info);
+    } else if (logLevel == "warn") {
+        spdlog::set_level(spdlog::level::warn);
+    } else if (logLevel == "err") {
+        spdlog::set_level(spdlog::level::err);
+    } else if (logLevel == "critical") {
+        spdlog::set_level(spdlog::level::critical);
+    } else if (logLevel == "off") {
+        spdlog::set_level(spdlog::level::off);
+    } else {
+        spdlog::critical("Log level '{}' not recognized!");
+        exit(-1);
+    }
+
+    // spdlog::cfg::load_env_levels();
+    spdlog::info("Welcome to MiniCFD!");
+
+    auto N = args["domain-size"].as<size_t>();
     auto width = N;
     auto height = N;
     auto depth = N;
 
     // Set up grid
-    auto grid = std::make_shared<Grid<ScalarT>>(width, height, depth, 1);
+    auto grid = std::make_shared<Grid<ScalarT>>(
+        width, height, depth, args["cell-size"].as<ScalarT>());
 
     // Create velovity and pressure fields
     auto U = std::make_unique<VelocityField<ScalarT>>(grid);
@@ -326,50 +316,45 @@ int main(int argc, char** argv) {
         }
     }
 
-    
+    double endTime = args["end-time"].as<double>();
+    double dt = args["step-size"].as<double>();
 
-    double endTime = 1.0;
-    double dt = 0.05;
-
-    std::cout << "Initialization done!\n";
-    write_to_file(*U, *p, "fields_0.txt");
+    spdlog::info("Initialization done!");
+    write_to_file(*U, *p, args["output-prefix"].as<std::string>() + "_0.txt");
 
     // Time loop
     unsigned step = 0;
     for (double t = 0; t < endTime; t += dt) {
         step++;
 
-        std::cout << "Initial U_x field:\n";
-        dumpVectorComponent(U->getRawValues(), 0 , 3);
+        SPDLOG_TRACE("Initial U_x field:\n{}",
+                     dumpVectorComponent(U->getRawValues(), 0, 3));
 
         // - Solve advection
-        std::cout << "Solving advection equation\n";
+        spdlog::debug("Solving advection equation");
         auto U_adv = solveAdvection(*U, dt);
 
-        std::cout << "U_x after advection:\n";
-        dumpVectorComponent(U_adv.getRawValues(), 0, 3);
+        SPDLOG_TRACE("U_x after advection:\n{}",
+                     dumpVectorComponent(U_adv.getRawValues(), 0, 3));
 
         // - Pressure corection
-        std::cout << "Solving pressure correction\n";
+        spdlog::debug("Solving pressure correction...");
         auto p_new = solvePressureCorrection(U_adv, *p, dt);
 
-        std::cout << "Pressure field:\n";
-        dumpVector(p_new.getRawValues());
+        SPDLOG_TRACE("Pressure field: {}\n", dumpVector(p_new.getRawValues()));
 
-        std::cout << "Applying pressure correction\n";
+        spdlog::debug("Applying pressure correction...");
         auto U_corr = applyPressureCorrection(U_adv, p_new, dt);
 
         // - Write field
-        write_to_file(U_corr, p_new, "fields_" + std::to_string(step) + ".txt");
-        std::cout << "Time step complete. t = " << t << "\n";
+        write_to_file(U_corr, p_new,
+                      args["output-prefix"].as<std::string>() + "_" +
+                          std::to_string(step) + ".txt");
+        spdlog::info("Time step complete. t = {:.5f}", t);
 
         *U = U_corr;
         *p = p_new;
     }
-
-    // - Validation
-
-    // - Visualization
 
     return 0;
 }
