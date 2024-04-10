@@ -12,6 +12,11 @@ add_executable(minicfd
     src/MiniCFD.cpp
 )
 
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(minicfd PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
     cxxopts

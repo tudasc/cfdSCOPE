@@ -54,6 +54,7 @@ class Vector {
                "Vector addition is only defined for vectors of the same size.");
 
         Vector<T> res = *this;
+#pragma omp parallel for
         for (int i = 0; i < this->getSize(); i++) {
             res[i] += other[i];
         }
@@ -62,9 +63,11 @@ class Vector {
 
     Vector<T> operator-() const {
         Vector<T> res(*this);
+#pragma omp parallel for
         for (int i = 0; i < this->getSize(); i++) {
             res[i] = (*this)[i] * -1.0;
         }
+
         return res;
     }
 
@@ -74,6 +77,7 @@ class Vector {
 
     Vector<T> operator*(T scalar) const {
         Vector<T> res = *this;
+#pragma omp parallel for
         for (int i = 0; i < this->getSize(); i++) {
             res[i] = (*this)[i] * scalar;
         }
@@ -96,6 +100,7 @@ T dot(const Vector<T>& u, const Vector<T>& v) {
 
     T res = 0.0;
 
+#pragma omp parallel for reduction(+:res)
     for (size_t i = 0; i < u.getSize(); i++) {
         res += u[i] * v[i];
     }
@@ -110,6 +115,7 @@ template <typename T>
 T norm(const Vector<T> vec) {
     T res = 0.0;
 
+#pragma omp parallel for reduction(+:res)
     for (size_t i = 0; i < vec.getSize(); i++) {
         res += vec[i] * vec[i];
     }

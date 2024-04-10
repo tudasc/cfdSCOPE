@@ -10,6 +10,7 @@
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 #include <cxxopts.hpp>
+#include <omp.h>
 
 #include <array>
 #include <exception>
@@ -18,10 +19,12 @@
 
 using ScalarT = double;
 
+
 template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
     Vector<T> transportEq(U.getNumValues());
     size_t idx = 0;
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
@@ -34,9 +37,9 @@ inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
                 auto f_z = -U.getLeftU(i, j, k) * U.dwdx(i, j, k) -
                            U.getTopV(i, j, k) * U.dwdy(i, j, k) -
                            U.getFrontW(i, j, k) * U.dwdz(i, j, k);
-                transportEq[idx++] = f_x;
-                transportEq[idx++] = f_y;
-                transportEq[idx++] = f_z;
+                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 0] = f_x;
+                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 1] = f_y;
+                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 2] = f_z;
             }
         }
     }
@@ -57,7 +60,8 @@ template <typename T>
 inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
                                                 double dt) {
     auto U_adv = U;
-    T cellSize = U.getCellSize();
+    auto cellSize = U.getCellSize();
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
@@ -121,6 +125,8 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
 
     size_t idx = 0;
     std::vector<SparseMatrixEntry<T>> coeffs;
+
+    //TODO Parallelize .push_back not suitable for openmp for
     for (size_t k = 0; k < depth; k++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t i = 0; i < width; i++) {
@@ -334,13 +340,20 @@ int main(int argc, char** argv) {
     auto p = std::make_unique<PressureField<ScalarT>>(grid);
 
     // Init values
-    for (size_t i = 0; i < width; i++) {
-        for (size_t j = 0; j < height; j++) {
-            for (size_t k = 0; k < depth; k++) {
-                U->setLeftU(i, j, k, 0);
-                U->setTopV(i, j, k, 0);
-                U->setFrontW(i, j, k, 0);
-                p->setPressure(i, j, k, 1);
+#pragma omp parallel
+    {
+#pragma omp master
+        spdlog::info("Using {} OpenMP threads.", omp_get_num_threads());
+
+#pragma omp for collapse(3)
+        for (size_t i = 0; i < width; i++) {
+            for (size_t j = 0; j < height; j++) {
+                for (size_t k = 0; k < depth; k++) {
+                    U->setLeftU(i, j, k, 0);
+                    U->setTopV(i, j, k, 0);
+                    U->setFrontW(i, j, k, 0);
+                    p->setPressure(i, j, k, 1);
+                }
             }
         }
     }
