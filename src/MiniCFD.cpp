@@ -23,6 +23,7 @@ template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
     Vector<T> transportEq(U.getNumValues());
     size_t idx = 0;
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
