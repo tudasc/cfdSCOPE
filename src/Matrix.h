@@ -19,9 +19,9 @@ struct SparseMatrixEntry {
 };
 
 /**
-  Sparse matrix in compressed-sparse-row format (CSR)
+    Sparse matrix in compressed-sparse-row format (CSR)
 
-  c.f., https://en.wikipedia.org/wiki/Sparse_matrix
+    c.f., https://en.wikipedia.org/wiki/Sparse_matrix
 */
 template <typename T>
 class SparseMatrix {
@@ -96,24 +96,7 @@ class SparseMatrix {
     }
 
     /**
-     Matrix access operator
-    */
-    T& operator()(size_t r, size_t c) {
-        assert((r >= 0 && r < _rows && c >= 0 && c < _cols) &&
-               "Out-of-bounds access!");
-
-        size_t row_start = _rowIndex[r];
-        size_t row_end = _rowIndex[r + 1];
-
-        for (int i = row_start; i < row_end; i++) {
-            if (_colIndex[i] == c)
-                return _v[i];
-        }
-        assert("Index not set" && false);
-    }
-
-    /**
-    Scale matrix by faktor k.
+        Scale matrix by faktor k.
     */
     void operator*=(T k) {
 #pragma omp parallel for
@@ -123,7 +106,7 @@ class SparseMatrix {
     }
 
     /**
-    Compute scaled matrix.
+        Compute scaled matrix.
     */
     SparseMatrix<T> operator*(T k) const {
         auto cpy(*this);
@@ -168,7 +151,7 @@ class SparseMatrix {
     std::vector<size_t> _rowIndex;
 
     // zero entry
-    // we need this as a 0.0 in memery which we can return a const reference
+    // we need this as a 0.0 in memery which we can return as a const reference
     static constexpr T _zero = 0.0;
 };
 

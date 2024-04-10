@@ -7,17 +7,18 @@
 #include "Matrix.h"
 #include "Vector.h"
 
-#include <iostream>
+#include "spdlog/spdlog.h"
 
 /**
+    Conjugate gradient solver
     https://en.wikipedia.org/wiki/Conjugate_gradient_method
 */
 template <typename T>
 Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
     Vector<T> x(b.getSize());
-    T tol = 1e-8;//std::numeric_limits<T>::epsilon();
+    T tol = 1e-8; // std::numeric_limits<T>::epsilon();
 
-    auto maxIter = 100;
+    auto maxIter = 1000;
 
     // Initialize residual vector
     Vector<T> residual = b - A.spmv(x);
@@ -29,10 +30,10 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
     // Iterate until convergence
     while (oldSqrResidNorm > tol) {
         if (maxIter-- <= 0) {
-            std::cout << "Max iterations reached - aborting...\n";
+            spdlog::error("Max iterations reached - aborting...");
             assert(false && "PCG did not converge");
         }
-        std::cout << "PCG residual=" << oldSqrResidNorm << "\n";
+        SPDLOG_TRACE("PCG residual={}", oldSqrResidNorm);
         Vector<T> z = A.spmv(direction);
 
         T step_size = dot(residual, residual) / dot(direction, z);
@@ -49,7 +50,7 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
 
         oldSqrResidNorm = newSqrResidNorm;
     }
-    std::cout << "Final residual=" << oldSqrResidNorm << "\n";
+    SPDLOG_TRACE("Final residual={}", oldSqrResidNorm);
     return x;
 }
 

@@ -16,6 +16,7 @@ add_executable(
         lingalg_basics_tests.cpp
         solver_tests.cpp
         io_basic_test.cpp
+        trilerp_tests.cpp
 )
 
 target_include_directories(
@@ -32,6 +33,7 @@ target_compile_definitions(
 
 target_link_libraries(
         MiniCFD_tests
+        PRIVATE spdlog::spdlog_header_only
         GTest::gtest_main
 )
 

@@ -7,14 +7,11 @@
 
 #include "Grid.h"
 
-// TODO is usage of std::stod appropriate??
 
-// TODO some exception checking for proper file format?
 /**
- *
- * @tparam T
- * @param fname
- * @return
+    Read initial conditions from file
+    
+    TODO: some exception checking for proper file format?
  */
 template <typename T>
 std::pair<VelocityField<T>, PressureField<T>>
@@ -65,10 +62,7 @@ read_from_file(std::string fname) {
 }
 
 /**
- *
- * @tparam T
- * @param grid
- * @param fname
+    Write state (velocity field, pressure field) to file
  */
 template <typename T>
 void write_to_file(const VelocityField<T>& velocities,
