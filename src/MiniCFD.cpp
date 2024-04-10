@@ -37,9 +37,9 @@ inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
                 auto f_z = -U.getLeftU(i, j, k) * U.dwdx(i, j, k) -
                            U.getTopV(i, j, k) * U.dwdy(i, j, k) -
                            U.getFrontW(i, j, k) * U.dwdz(i, j, k);
-                transportEq[i* (U.getHeight()+U.getDepth()+3) + j*(U.getDepth()+3)+k*3 + 0] = f_x;
-                transportEq[i* (U.getHeight()+U.getDepth()+3) + j*(U.getDepth()+3)+k*3 + 1] = f_y;
-                transportEq[i* (U.getHeight()+U.getDepth()+3) + j*(U.getDepth()+3)+k*3 + 2] = f_z;
+                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 0] = f_x;
+                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 1] = f_y;
+                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 2] = f_z;
             }
         }
     }
