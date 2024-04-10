@@ -103,4 +103,3 @@ TEST(LinalgBasicsTest, MatrixVectorProductEmptyRows) {
     ASSERT_FLOAT_EQ(product[0], 0.0);
     ASSERT_FLOAT_EQ(product[1], 3.14159);
 }
- 
