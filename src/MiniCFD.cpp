@@ -283,7 +283,7 @@ inline VelocityField<T> applyForces(const VelocityField<T>& U,
 
     auto cellSize = U.getCellSize();
 
-    float windSpeed = 1;
+    float windSpeed = 4 * cellSize;
 
     VelocityField<T> U_f = U;
 
@@ -399,6 +399,8 @@ int main(int argc, char** argv) {
     spdlog::info("Initialization done!");
     write_to_file(*U, *p, args["output-prefix"].as<std::string>() + "_0.txt");
 
+    VelocityField<ScalarT> U_prev = *U;
+
     // Time loop
     unsigned step = 0;
     for (double t = 0; t < endTime; t += dt) {
@@ -437,6 +439,10 @@ int main(int argc, char** argv) {
 
         *U = U_corr;
         *p = p_new;
+
+        auto dif = norm(U->getRawValues() - U_prev.getRawValues());
+        spdlog::info("Difference in U: {:.5f}", dif);
+        U_prev = *U;
     }
 
     return 0;
