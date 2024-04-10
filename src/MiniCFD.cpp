@@ -256,17 +256,17 @@ inline VelocityField<T> applyForces(const VelocityField<T>& U,
 
     auto cellSize = U.getCellSize();
 
-
-    float maxForce = 1;
+    float windSpeed = 1;
 
     VelocityField<T> U_f = U;
 
     for (size_t i = 1; i < width; i++) { // Starting with i=1 to respect boundary condition
         for (size_t j = 0; j < height; j++) {
             for (size_t k = 0; k < depth; k++) {
-                auto distToSurface = j * cellSize;
-                auto f = maxForce * std::exp(-distToSurface);           
                 auto oldU = U_f.getLeftU(i, j, k);
+                auto distToSurface = j * cellSize;
+                auto maxForce = windSpeed - oldU;
+                auto f = maxForce * std::exp(-2*distToSurface);           
                 auto newU = oldU + dt * f;  // Assuming density rho = 1
                 U_f.setLeftU(i, j, k, newU);                
             }
