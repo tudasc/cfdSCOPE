@@ -42,6 +42,18 @@ inline void dumpVector(const Vector<T>& v) {
 }
 
 template<typename T>
+inline void dumpVectorComponent(const Vector<T>& v, int comp, int stride) {
+    std::cout << "[ ";
+    for (auto i = comp; i < v.getSize(); i+=stride) {
+        std::cout << v[i];
+        if (i < v.getSize()-1) {
+            std::cout << ", ";
+        }
+    }
+    std::cout << " ]\n";
+}
+
+template<typename T>
 inline void dumpField(const VelocityField<T>& v) {
 }
 

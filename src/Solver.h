@@ -17,6 +17,8 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
     Vector<T> x(b.getSize());
     T tol = 1e-8;//std::numeric_limits<T>::epsilon();
 
+    auto maxIter = 100;
+
     // Initialize residual vector
     Vector<T> residual = b - A.spmv(x);
     // Initialize search direction vector
@@ -26,6 +28,10 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
 
     // Iterate until convergence
     while (oldSqrResidNorm > tol) {
+        if (maxIter-- <= 0) {
+            std::cout << "Max iterations reached - aborting...\n";
+            assert(false && "PCG did not converge");
+        }
         std::cout << "PCG residual=" << oldSqrResidNorm << "\n";
         Vector<T> z = A.spmv(direction);
 
@@ -43,7 +49,7 @@ Vector<T> pcg(const SparseMatrix<T>& A, const Vector<T>& b) {
 
         oldSqrResidNorm = newSqrResidNorm;
     }
-
+    std::cout << "Final residual=" << oldSqrResidNorm << "\n";
     return x;
 }
 

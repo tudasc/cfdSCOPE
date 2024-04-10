@@ -112,7 +112,7 @@ inline Vec3<T> traceBackward(Vec3<T> endPos, const VelocityField<T>& U,
     // back in time
     auto midPos = endPos - U.trilerp(endPos) * 0.5 * dt;
     auto startPos = endPos - U.trilerp(midPos) * dt;
-    return startPos;
+    return U.getGrid()->getNearestInsidePos(startPos);
 }
 
 template <typename T>
@@ -124,15 +124,25 @@ inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
     for (size_t i = 0; i < U.getWidth(); i++) {
         for (size_t j = 0; j < U.getHeight(); j++) {
             for (size_t k = 0; k < U.getDepth(); k++) {
-                Vec3<T> pu{(i + 0.5) * cellSize, j * cellSize, k * cellSize};
-                Vec3<T> pv{i * cellSize, (j + 0.5) * cellSize, k * cellSize};
-                Vec3<T> pw{i * cellSize, j * cellSize, (k + 0.5) * cellSize};
-                pu = traceBackward(pu, U, dt);
-                pv = traceBackward(pv, U, dt);
-                pw = traceBackward(pw, U, dt);
-                U_adv.setLeftU(i, j, k, U.trilerp(pu).x);
-                U_adv.setTopV(i, j, k, U.trilerp(pv).y);
-                U_adv.setFrontW(i, j, k, U.trilerp(pw).z);
+                // u is on boundary for i = 0
+                if (i > 0) {
+                    Vec3<T> pu{i * cellSize, (j + 0.5) * cellSize, (k + 0.5) * cellSize};
+                    auto pu_origin = traceBackward(pu, U, dt);
+                    U_adv.setLeftU(i, j, k, U.trilerp(pu_origin).x);
+                    std::cout << "Cell at " << pu.x << ", " << pu.y << ", " << pu.z <<":  u comes from " << pu_origin.x << "\n";
+                }
+                // v is on boundary for j = 0
+                if (j > 0) {
+                    Vec3<T> pv{(i + 0.5) * cellSize, j * cellSize, (k + 0.5) * cellSize};
+                    auto pv_origin = traceBackward(pv, U, dt);
+                    U_adv.setTopV(i, j, k, U.trilerp(pv_origin).y);
+                }
+                // w is on boundary for k = 0
+                if (k > 0) {
+                    Vec3<T> pw{(i + 0.5) * cellSize, (j + 0.5) * cellSize, k * cellSize};
+                    auto pw_origin = traceBackward(pw, U, dt);
+                    U_adv.setFrontW(i, j, k, U.trilerp(pw_origin).z);
+                }
             }
         }
     }
@@ -149,8 +159,10 @@ template <typename T>
 inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                                                 const PressureField<T>& p,
                                                 double dt) {
-    auto size = U_adv.getGrid()->getCellCount();
-    auto cellSize = U_adv.getGrid()->getCellSize();
+    auto& grid = *U_adv.getGrid();
+
+    auto size = grid.getCellCount();
+    auto cellSize = grid.getCellSize();
 
     auto width = U_adv.getWidth();
     auto height = U_adv.getHeight();
@@ -173,6 +185,8 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
     for (size_t k = 0; k < depth; k++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t i = 0; i < width; i++) {
+
+                size_t idx = grid.cellIndex(i, j, k);
             
                 // Right side
                 auto U_div_ijk = U_adv.div(i, j, k);
@@ -184,48 +198,46 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                 // Matrix coefficients
                 if (i >= 1) {
                     assert(idx >= 1);
-                    coeffs.push_back({idx, idx - 1, kNeighbor});
+                    coeffs.push_back({idx, grid.cellIndex(i-1,j,k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Left BC
                 }
                 if (i < width - 1) {
-                    coeffs.push_back({idx, idx + 1, kNeighbor});
+                    coeffs.push_back({idx, grid.cellIndex(i+1,j,k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Right BC
                 }
                 if (j >= 1) {
                     assert(idx >= width);
-                    coeffs.push_back({idx, idx - width, kNeighbor});
+                    coeffs.push_back({idx, grid.cellIndex(i,j-1,k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Top BC
                 }
                 if (j < height - 1) {
-                    coeffs.push_back({idx, idx + width, kNeighbor});
+                    coeffs.push_back({idx, grid.cellIndex(i,j+1,k), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Bottom BC
                 }
                 if (k >= 1) {
                     assert(idx >= width * height);
-                    coeffs.push_back({idx, idx - width * height, kNeighbor});
+                    coeffs.push_back({idx, grid.cellIndex(i,j,k-1), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Front BC
                 }
                 if (k < depth - 1) {
-                    coeffs.push_back({idx, idx + width * height, kNeighbor});
+                    coeffs.push_back({idx, grid.cellIndex(i,j,k+1), kNeighbor});
                     numRowEntries++;
                 } else {
                     // Back BC
                 }
                 coeffs.push_back({idx, idx, numRowEntries * kMiddle});
 
-                // std::cout << "Cell (" << i << ", " << j << ", " << k <<"):  neighbors=" <<  numRowEntries << ", div=" << U_div_ijk << "\n";
-
-                idx++;
+                std::cout << "Cell (" << i << ", " << j << ", " << k <<"):  neighbors=" <<  numRowEntries << ", div=" << U_div_ijk << "\n";
             }
         }
     }
@@ -258,21 +270,30 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
     for (size_t i = 0; i < width; i++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t k = 0; k < depth; k++) {
-                auto u =
-                    U_adv.getLeftU(i, j, k) -
-                    dt * (p.getPressure(i, j, k) - p.getPressure(i - 1, j, k)) /
+                // u is on boundary for i = 0
+                if (i > 0) {
+                    auto u =
+                        U_adv.getLeftU(i, j, k) -
+                        dt * (p.getPressure(i, j, k) - p.getPressure(i - 1, j, k)) /
                         cellSize;
-                auto v =
-                    U_adv.getTopV(i, j, k) -
-                    dt * (p.getPressure(i, j, k) - p.getPressure(i, j - 1, k)) /
-                        cellSize;
-                auto w =
-                    U_adv.getFrontW(i, j, k) -
-                    dt * (p.getPressure(i, j, k) - p.getPressure(i, j, k - 1)) /
-                        cellSize;
-                U_corr.setLeftU(i, j, k, u);
-                U_corr.setTopV(i, j, k, v);
-                U_corr.setFrontW(i, j, k, w);
+                    U_corr.setLeftU(i, j, k, u);
+                }
+                // v is on boundary for j = 0
+                if (j > 0) {
+                    auto v =
+                        U_adv.getTopV(i, j, k) -
+                        dt * (p.getPressure(i, j, k) - p.getPressure(i, j - 1, k)) /
+                            cellSize;
+                    U_corr.setTopV(i, j, k, v);
+                }
+                // w is on boundary for k = 0
+                if (k > 0) {
+                    auto w =
+                        U_adv.getFrontW(i, j, k) -
+                        dt * (p.getPressure(i, j, k) - p.getPressure(i, j, k - 1)) /
+                            cellSize;
+                    U_corr.setFrontW(i, j, k, w);
+                }
             }
         }
     }
@@ -282,8 +303,7 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 int main(int argc, char** argv) {
     // Command line parsing (later)
 
-    assert(argc> 1);
-    auto N = std::stoi(argv[1]);
+    auto N = 20;
 
     auto width = N;
     auto height = N;
@@ -304,13 +324,16 @@ int main(int argc, char** argv) {
                 U->setTopV(i, j, k, 0);
                 U->setFrontW(i, j, k, 0);
                 p->setPressure(i, j, k, 1);
+                if (j == 0 && i > 0) {
+                    U->setLeftU(i, j, k, 1);
+                }
             }
         }
     }
-    U->setLeftU(50, 50, 50, 2);
 
-    double endTime = 0.05;
-    double dt = 0.1;
+
+    double endTime = 1.0;
+    double dt = 0.05;
 
     std::cout << "Initialization done!\n";
     write_to_file(*U, *p, "fields_0.txt");
@@ -320,19 +343,22 @@ int main(int argc, char** argv) {
     for (double t = 0; t < endTime; t += dt) {
         step++;
 
-        // std::cout << "Initial field:\n";
-        // dumpVector(U->getRawValues());
+        std::cout << "Initial U_x field:\n";
+        dumpVectorComponent(U->getRawValues(), 0 , 3);
 
         // - Solve advection
         std::cout << "Solving advection equation\n";
         auto U_adv = solveAdvection(*U, dt);
 
-        // std::cout << "After advection:\n";
-        // dumpVector(U_adv.getRawValues());
+        std::cout << "U_x after advection:\n";
+        dumpVectorComponent(U_adv.getRawValues(), 0, 3);
 
         // - Pressure corection
         std::cout << "Solving pressure correction\n";
         auto p_new = solvePressureCorrection(U_adv, *p, dt);
+
+        std::cout << "Pressure field:\n";
+        dumpVector(p_new.getRawValues());
 
         std::cout << "Applying pressure correction\n";
         auto U_corr = applyPressureCorrection(U_adv, p_new, dt);

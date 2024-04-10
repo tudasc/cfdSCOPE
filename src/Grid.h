@@ -59,6 +59,33 @@ class Grid {
         return i >= 0 && i < getWidth() && j >= 0 && j < getHeight() &&
                k >= 0 && k < getDepth();
     }
+
+    Vec3<T> getNearestInsidePos(Vec3<T> pos) {
+        auto maxX = width * cellSize;
+        auto maxY = height * cellSize;
+        auto maxZ = depth * cellSize;
+        if (pos.x < 0) {
+            pos.x = 0;
+        }
+        if (pos.x > maxX) {
+            pos.x = maxX;
+        }
+
+        if (pos.y < 0) {
+            pos.y = 0;
+        }
+        if (pos.y > maxY) {
+            pos.y = maxY;
+        }
+
+        if (pos.z < 0) {
+            pos.z = 0;
+        }
+        if (pos.z > maxZ) {
+            pos.z = maxZ;
+        }
+        return pos;
+    }
 };
 
 // template <typename T>
@@ -260,8 +287,16 @@ class VelocityField {
 
     std::shared_ptr<Grid<T>> getGrid() const { return grid; }
 
+    /**
+    * Trilinear interpolation of the velocity field at pos.
+    * We assume all wall boundaries. For points outside of the domain, we use the value of the closest point within the domain.
+    */
     Vec3<T> trilerp(Vec3<T> pos) const {
+
         auto cellSize = getCellSize();
+
+        pos = grid->getNearestInsidePos(pos);        
+
         int iu = (int)(pos.x / cellSize);
         int ju = (int)(pos.y / cellSize - 0.5);
         int ku = (int)(pos.z / cellSize - 0.5);
