@@ -10,6 +10,7 @@
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 #include <cxxopts.hpp>
+#include <omp.h>
 
 #include <array>
 #include <exception>
@@ -339,14 +340,20 @@ int main(int argc, char** argv) {
     auto p = std::make_unique<PressureField<ScalarT>>(grid);
 
     // Init values
-    for (size_t i = 0; i < width; i++) {
-        for (size_t j = 0; j < height; j++) {
-            for (size_t k = 0; k < depth; k++) {
-                U->setLeftU(i, j, k, 0);
-                U->setTopV(i, j, k, 0);
-                U->setFrontW(i, j, k, 0);
-                p->setPressure(i, j, k, 1);
-                
+#pragma omp parallel
+    {
+#pragma omp master
+        spdlog::info("Using {} OpenMP threads.", omp_get_num_threads());
+
+#pragma omp for collapse(3)
+        for (size_t i = 0; i < width; i++) {
+            for (size_t j = 0; j < height; j++) {
+                for (size_t k = 0; k < depth; k++) {
+                    U->setLeftU(i, j, k, 0);
+                    U->setTopV(i, j, k, 0);
+                    U->setFrontW(i, j, k, 0);
+                    p->setPressure(i, j, k, 1);
+                }
             }
         }
     }
