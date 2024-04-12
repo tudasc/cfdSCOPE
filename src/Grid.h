@@ -104,6 +104,8 @@ class PressureField {
 
     Vector<T>& getRawValues() { return field; }
 
+    const Vector<T>& getRawValues() const { return field; }
+
     std::shared_ptr<Grid<T>> getGrid() const { return grid; }
 
     Vec3<T> div(size_t x, size_t y) const {}
