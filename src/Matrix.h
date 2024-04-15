@@ -99,7 +99,7 @@ class SparseMatrix {
         Scale matrix by faktor k.
     */
     void operator*=(T k) {
-#pragma omp parallel for
+#pragma omp simd
         for (auto& v : _v) {
             v *= k;
         }
