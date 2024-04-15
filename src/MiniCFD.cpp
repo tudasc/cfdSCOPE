@@ -283,7 +283,7 @@ inline VelocityField<T> applyForces(const VelocityField<T>& U,
 
     auto cellSize = U.getCellSize();
 
-    float windSpeed = 4 * cellSize;
+    float windSpeed = 10 * cellSize;
 
     VelocityField<T> U_f = U;
 
