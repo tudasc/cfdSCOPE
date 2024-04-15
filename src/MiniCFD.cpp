@@ -64,7 +64,6 @@ template <typename T>
 inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
                                                 double dt) {
     auto U_adv = U;
-
     auto cellSize = U.getCellSize();
 #pragma omp parallel for collapse(3)
     for (size_t i = 0; i < U.getWidth(); i++) {
