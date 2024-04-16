@@ -27,11 +27,15 @@ enum class PreconditionerType {
 template <typename T>
 inline Vec3<T> traceBackward(Vec3<T> endPos, const VelocityField<T>& U,
                              float dt) {
-    // Use 2nd order explicit Runge-Kutte scheme to trace velocity "particle"
+    // Use 4th order explicit Runge-Kutte scheme to trace velocity "particle"
     // back in time
-    auto midPos = endPos - U.trilerp(endPos) * 0.5 * dt;
-    auto startPos = endPos - U.trilerp(midPos) * dt;
-    return U.getGrid()->getNearestInsidePos(startPos);
+    auto k1 = U.trilerp(endPos);
+    auto k2 = U.trilerp(endPos - k1 * (dt * 0.5));
+    auto k3 = U.trilerp(endPos - k2 * (dt * 0.5));
+    auto k4 = U.trilerp(endPos - k3 * dt);
+
+    auto res = endPos - (k1 + k2 * 2 + k3 * 3 + k4) * (dt / 6.0);
+    return U.getGrid()->getNearestInsidePos(res);
 }
 
 template <typename T>
