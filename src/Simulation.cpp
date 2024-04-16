@@ -373,4 +373,3 @@ void simulate(const SimulationConfig& cfg) {
         U_prev = *U;
     }
 }
- 

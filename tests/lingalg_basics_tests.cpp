@@ -106,8 +106,7 @@ TEST(LinalgBasicsTest, MatrixVectorProductEmptyRows) {
 
 TEST(LinalgBasicsTest, MatrixSymmetricTestYes) {
     std::vector<SparseMatrixEntry<float>> entries = {
-        {0, 0, 1.0}, {1, 0, 2.0}, {0, 1, 2.0}
-    };
+        {0, 0, 1.0}, {1, 0, 2.0}, {0, 1, 2.0}};
 
     SparseMatrix<float> M(2, 2, entries);
 
@@ -116,8 +115,7 @@ TEST(LinalgBasicsTest, MatrixSymmetricTestYes) {
 
 TEST(LinalgBasicsTest, MatrixSymmetricTestNo) {
     std::vector<SparseMatrixEntry<float>> entries = {
-        {0, 0, 1.0}, {1, 0, 2.0}, {0, 1, 1.0}
-    };
+        {0, 0, 1.0}, {1, 0, 2.0}, {0, 1, 1.0}};
 
     SparseMatrix<float> M(2, 2, entries);
 

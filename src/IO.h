@@ -7,10 +7,9 @@
 
 #include "Grid.h"
 
-
 /**
     Read initial conditions from file
-    
+
     TODO: some exception checking for proper file format?
  */
 template <typename T>
