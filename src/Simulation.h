@@ -1,7 +1,9 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
+#include "Grid.h"
 #include <cstddef>
+#include <memory>
 #include <string>
 
 using ScalarT = double;
@@ -14,11 +16,17 @@ struct SimulationConfig {
     ScalarT cellSize;
     std::string outputPrefix;
     PreconditionerType preconditionerType;
+    bool disableFileOutput;
+};
+
+struct SimulationOutput {
+    std::unique_ptr<VelocityField<ScalarT>> velocityField;
+    std::unique_ptr<PressureField<ScalarT>> pressureField;
 };
 
 /**
     Main simulation routine
 */
-void simulate(const SimulationConfig& cfg);
+SimulationOutput simulate(const SimulationConfig& cfg);
 
 #endif

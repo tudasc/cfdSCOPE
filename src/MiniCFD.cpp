@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
         .cellSize = args["cell-size"].as<ScalarT>(),
         .outputPrefix = args["output-prefix"].as<std::string>(),
         .preconditionerType = preconditionerType,
+        .disableFileOutput = false,
     };
 
     // run simulation

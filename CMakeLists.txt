@@ -27,7 +27,7 @@ target_link_libraries(minicfd PRIVATE simulation)
 # ================
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(minicfd PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(simulation PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 include(FetchContent)
@@ -47,7 +47,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 target_link_libraries(minicfd PRIVATE spdlog::spdlog_header_only)
-target_link_libraries(simulation PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(simulation PUBLIC spdlog::spdlog_header_only)
 
 
 # Options and tests

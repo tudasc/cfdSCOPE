@@ -294,7 +294,7 @@ inline VelocityField<T> applyForces(const VelocityField<T>& U, double dt) {
     return U_f;
 }
 
-void simulate(const SimulationConfig& cfg) {
+SimulationOutput simulate(const SimulationConfig& cfg) {
     // Set up grid
     auto grid = std::make_shared<Grid<ScalarT>>(cfg.width, cfg.height,
                                                 cfg.depth, cfg.cellSize);
@@ -361,8 +361,11 @@ void simulate(const SimulationConfig& cfg) {
         auto U_corr = applyPressureCorrection(U_adv, p_new, dt);
 
         // - Write field
-        write_to_file(U_corr, p_new,
-                      cfg.outputPrefix + "_" + std::to_string(step) + ".txt");
+        if (!cfg.disableFileOutput) {
+            write_to_file(U_corr, p_new,
+                          cfg.outputPrefix + "_" + std::to_string(step) +
+                              ".txt");
+        }
         spdlog::info("Time step complete. t = {:.5f}", t);
 
         *U = U_corr;
@@ -372,4 +375,6 @@ void simulate(const SimulationConfig& cfg) {
         spdlog::info("Difference in U: {:.5f}", dif);
         U_prev = *U;
     }
+
+    return SimulationOutput{std::move(U), std::move(p)};
 }
