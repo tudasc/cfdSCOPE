@@ -99,7 +99,7 @@ class SparseMatrix {
         Scale matrix by faktor k.
     */
     void operator*=(T k) {
-#pragma omp parallel for
+#pragma omp simd
         for (auto& v : _v) {
             v *= k;
         }
@@ -118,6 +118,22 @@ class SparseMatrix {
 
     size_t getRows() const { return _rows; }
 
+    bool isSymmetric() const {
+        if (_rows != _cols) {
+            return false;
+        }
+        constexpr auto tol = 1e-8;
+        for (size_t i = 0; i < _rows; i++) {
+            for (size_t j = _rowIndex[i]; j < _rowIndex[i + 1]; j++) {
+                if ((*this)(_colIndex[j], i) - _v[j] > tol) {
+                    //spdlog::warn("Index {}, {} is not symmetric.", i, _colIndex[j]);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /**
         (Sparse-) matrix-vector product
     */
@@ -126,7 +142,7 @@ class SparseMatrix {
 
         Vector<T> res(_rows);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
         for (size_t i = 0; i < _rows; i++) {
             T acc = 0.0;
 
@@ -135,10 +151,24 @@ class SparseMatrix {
             }
 
             res[i] = acc;
+
         }
 
         return res;
     }
+
+    size_t getRowIndex(size_t i) const {
+        return _rowIndex[i];
+    }
+
+    size_t getColIndex(size_t i) const {
+        return _colIndex[i];
+    }
+
+    T getVal(size_t i) const {
+        return _v[i];
+    }
+
 
   private:
     // dimensions

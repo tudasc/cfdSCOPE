@@ -36,6 +36,8 @@ FetchContent_MakeAvailable(spdlog)
 target_link_libraries(minicfd PRIVATE spdlog::spdlog_header_only)
 
 option(ENABLE_TRACE_LOG "Print log with level TRACE." OFF)
+option(BUILD_TESTS "Build test suite" OFF)
+
 if(ENABLE_TRACE_LOG)
     target_compile_definitions(minicfd PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 else()
@@ -43,4 +45,6 @@ else()
 endif()
 
 
-add_subdirectory(tests)
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

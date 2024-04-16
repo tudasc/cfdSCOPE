@@ -20,6 +20,10 @@
 using ScalarT = double;
 
 
+enum class PreconditionerType {
+    NONE, JACOBI, DIC
+};
+
 template <typename T>
 inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
     Vector<T> transportEq(U.getNumValues());
@@ -71,8 +75,8 @@ inline VelocityField<T> semiLagrangianAdvection(const VelocityField<T>& U,
                                (k + 0.5) * cellSize};
                     auto pu_origin = traceBackward(pu, U, dt);
                     U_adv.setLeftU(i, j, k, U.trilerp(pu_origin).x);
-                    SPDLOG_TRACE("Cell at {}, {}, {}:  x comes from {}", pu.x,
-                                 pu.y, pu.z, pu_origin.x);
+                    // SPDLOG_TRACE("Cell at {}, {}, {}:  x comes from {}", pu.x,
+                    //              pu.y, pu.z, pu_origin.x);
                 }
                 // v is on boundary for j = 0
                 if (j > 0) {
@@ -103,7 +107,8 @@ inline VelocityField<T> solveAdvection(const VelocityField<T>& U0, double dt) {
 template <typename T>
 inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                                                 const PressureField<T>& p,
-                                                double dt) {
+                                                double dt,
+                                                PreconditionerType preconditioner = PreconditionerType::DIC) {
     auto& grid = *U_adv.getGrid();
 
     auto size = grid.getCellCount();
@@ -188,15 +193,30 @@ inline PressureField<T> solvePressureCorrection(const VelocityField<T>& U_adv,
                 }
                 coeffs.push_back({idx, idx, numRowEntries * kMiddle});
 
-                SPDLOG_TRACE("Cell ({}, {}, {}): neighbors={}, div={}", i, j, k,
-                             numRowEntries, U_div_ijk);
+                // SPDLOG_TRACE("Cell ({}, {}, {}): neighbors={}, div={}", i, j, k,
+                //              numRowEntries, U_div_ijk);
             }
         }
     }
     SparseMatrix<T> A(size, size, coeffs);
 
     SPDLOG_TRACE("Running PCG");
-    Vector<T> p_new = pcg(A, b);
+    std::unique_ptr<Preconditioner<T>> pre;
+    switch(preconditioner) {
+        case PreconditionerType::NONE:
+            pre = std::make_unique<Preconditioner<T>>();
+            break;
+        case PreconditionerType::JACOBI:
+            pre = std::make_unique<JacobiPreconditioner<T>>(A);
+            break;
+        case PreconditionerType::DIC:
+            pre = std::make_unique<DICPreconditioner<T>>(A);
+            break;
+        default:
+            assert("Unknown preconditioner type" && false);
+    }
+
+    Vector<T> p_new = pcg(A, b, *pre, p.getRawValues());
     return {p.getGrid(), p_new};
 }
 
@@ -213,6 +233,7 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
 
     VelocityField<T> U_corr = U_adv;
 
+#pragma omp parallel for collapse(3)
     for (size_t i = 0; i < width; i++) {
         for (size_t j = 0; j < height; j++) {
             for (size_t k = 0; k < depth; k++) {
@@ -293,7 +314,8 @@ int main(int argc, char** argv) {
         ("c,cell-size", "Size of each simulation cell", cxxopts::value<ScalarT>()->default_value("1.0"))
         ("e,end-time", "Simulation duration (seconds)", cxxopts::value<double>()->default_value("1.0"))
         ("s,step-size", "Simulation step size (seconds)", cxxopts::value<double>()->default_value("0.05"))
-        ("p,output-prefix", "Output file prefix", cxxopts::value<std::string>()->default_value("fields"))
+        ("o,output-prefix", "Output file prefix", cxxopts::value<std::string>()->default_value("fields"))
+        ("p,preconditioner", "Preconditioner type (none, jacobi, dic)", cxxopts::value<std::string>()->default_value("dic"))
         ("h,help", "Print usage")
     ;
     // clang-format on
@@ -320,6 +342,19 @@ int main(int argc, char** argv) {
         spdlog::set_level(spdlog::level::off);
     } else {
         spdlog::critical("Log level '{}' not recognized!");
+        exit(-1);
+    }
+
+    PreconditionerType preconditionerType{PreconditionerType::DIC};
+    const std::string precondTypeStr = args["preconditioner"].as<std::string>();
+    if (precondTypeStr == "none") {
+        preconditionerType = PreconditionerType::NONE;
+    } else if (precondTypeStr == "jacobi") {
+        preconditionerType = PreconditionerType::JACOBI;
+    } else if (precondTypeStr == "dic") {
+        preconditionerType = PreconditionerType::DIC;
+    } else {
+        spdlog::critical("Invalid preconditioner '{}'", precondTypeStr);
         exit(-1);
     }
 
@@ -369,27 +404,27 @@ int main(int argc, char** argv) {
     for (double t = 0; t < endTime; t += dt) {
         step++;
 
-        SPDLOG_TRACE("Initial U_x field:\n{}",
-                     dumpVectorComponent(U->getRawValues(), 0, 3));
+        // SPDLOG_TRACE("Initial U_x field:\n{}",
+        //              dumpVectorComponent(U->getRawValues(), 0, 3));
 
         // - External forces
         spdlog::debug("Applying external forces");
         auto U_f = applyForces(*U, dt);
-        SPDLOG_TRACE("U_x after forces:\n{}",
-                     dumpVectorComponent(U_f.getRawValues(), 0, 3));
+        // SPDLOG_TRACE("U_x after forces:\n{}",
+        //              dumpVectorComponent(U_f.getRawValues(), 0, 3));
 
         // - Solve advection
         spdlog::debug("Solving advection equation");
         auto U_adv = solveAdvection(U_f, dt);
 
-        SPDLOG_TRACE("U_x after advection:\n{}",
-                     dumpVectorComponent(U_adv.getRawValues(), 0, 3));
+        // SPDLOG_TRACE("U_x after advection:\n{}",
+        //              dumpVectorComponent(U_adv.getRawValues(), 0, 3));
 
         // - Pressure corection
         spdlog::debug("Solving pressure correction...");
-        auto p_new = solvePressureCorrection(U_adv, *p, dt);
+        auto p_new = solvePressureCorrection(U_adv, *p, dt, preconditionerType);
 
-        SPDLOG_TRACE("Pressure field: {}\n", dumpVector(p_new.getRawValues()));
+        // SPDLOG_TRACE("Pressure field: {}\n", dumpVector(p_new.getRawValues()));
 
         spdlog::debug("Applying pressure correction...");
         auto U_corr = applyPressureCorrection(U_adv, p_new, dt);
