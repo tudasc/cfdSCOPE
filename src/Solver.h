@@ -67,12 +67,6 @@ struct DICPreconditioner: public Preconditioner<T> {
                     _rDiag[j] -= A.getVal(idx) * A.getVal(idx) / _rDiag[i];
                 }
             }
-            // for (int j = i+1; j < n; j++) {
-            //     auto a_ij = A(i,j);
-            //     if (a_ij != 0) {
-            //         _rDiag[j] -= a_ij * a_ij / _rDiag[i];
-            //     }
-            // }
         }
 
         // Calculate the reciprocal of the preconditioned diagonal
@@ -98,12 +92,6 @@ struct DICPreconditioner: public Preconditioner<T> {
                     res[j] -= _rDiag[j] * A.getVal(idx) * res[i];
                 }
             }
-            // for (int j = i+1; j < n; j++) {
-            //     auto a_ij = A(i,j);
-            //     if (a_ij != 0) {
-            //         res[j] -= _rDiag[j] * a_ij * res[i];
-            //     }
-            // }   
         }
 
         // Apply lower part of preconditioner
@@ -116,12 +104,6 @@ struct DICPreconditioner: public Preconditioner<T> {
                     res[i] -= _rDiag[i] * A.getVal(idx) * res[j];
                 }
             }
-            // for (int j = n-1; j >= i+1; j--) {
-            //     auto a_ij = A(i,j);
-            //     if (a_ij != 0) {
-            //         res[i] -= _rDiag[i] * a_ij * res[j];
-            //     }
-            // }   
         }
         return res;
     }
@@ -130,57 +112,6 @@ private:
     Vector<T> _rDiag;
 
 };
-
-
-// template <typename T>
-// Vector<T> dic_preconditioner(const SparseMatrix<T>& A, const Vector<T>& x) {
-//     Vector<T> res(x.getSize());
-
-//     Vector<T> rDiag(x.getSize());
-
-//     for (int i = 0; i < x.getSize(); i++) {
-//         rDiag[i] = A(i, i);
-//     }
-
-//     for (int i = 0; i < x.getSize(); i++) {
-//         for (int j = i+1; j < x.getSize(); j++) {
-//             auto a_ij = A(i,j);
-//             if (a_ij != 0) {
-//                 rDiag[j] -= a_ij * a_ij / rDiag[i];
-//             }
-//         }
-//     }
-
-//     for (int i = 0; i < x.getSize(); i++) {
-//         rDiag[i] = 1.0 / rDiag[i];
-//     }
-
-//     // Apply preconditioner
-//     for (int i = 0; i < x.getSize(); i++) {
-//         res[i] = rDiag[i] * x[i];
-//     }
-
-//     for (int i = 0; i < x.getSize(); i++) {
-//         for (int j = i+1; j < x.getSize(); j++) {
-//             auto a_ij = A(i,j);
-//             if (a_ij != 0) {
-//                 res[j] -= rDiag[j] * a_ij * res[i];
-//             }
-//         }   
-//     }
-
-//      for (int i = x.getSize()-1; i >= 0; i--) {
-//         for (int j = x.getSize() -1; j >= i+1; j--) {
-//             auto a_ij = A(i,j);
-//             if (a_ij != 0) {
-//                 res[i] -= rDiag[i] * a_ij * res[j];
-//             }
-//         }   
-//     }
-
-
-//     return res;
-// }
 
 /**
     Preconditioned conjugate gradient solver
