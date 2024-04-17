@@ -126,7 +126,8 @@ class SparseMatrix {
         for (size_t i = 0; i < _rows; i++) {
             for (size_t j = _rowIndex[i]; j < _rowIndex[i + 1]; j++) {
                 if ((*this)(_colIndex[j], i) - _v[j] > tol) {
-                    //spdlog::warn("Index {}, {} is not symmetric.", i, _colIndex[j]);
+                    // spdlog::warn("Index {}, {} is not symmetric.", i,
+                    // _colIndex[j]);
                     return false;
                 }
             }
@@ -151,24 +152,16 @@ class SparseMatrix {
             }
 
             res[i] = acc;
-
         }
 
         return res;
     }
 
-    size_t getRowIndex(size_t i) const {
-        return _rowIndex[i];
-    }
+    size_t getRowIndex(size_t i) const { return _rowIndex[i]; }
 
-    size_t getColIndex(size_t i) const {
-        return _colIndex[i];
-    }
+    size_t getColIndex(size_t i) const { return _colIndex[i]; }
 
-    T getVal(size_t i) const {
-        return _v[i];
-    }
-
+    T getVal(size_t i) const { return _v[i]; }
 
   private:
     // dimensions

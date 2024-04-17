@@ -64,32 +64,24 @@ class Grid {
     }
 };
 
-template <typename T>
-class PressureField {
+template<typename T, unsigned dims>
+class Field {
+protected:
     std::shared_ptr<Grid<T>> grid;
     Vector<T> field;
 
-  public:
-    PressureField(std::shared_ptr<Grid<T>> grid)
-        : grid(grid), field(grid->getCellCount()) {}
+public:
+    Field(std::shared_ptr<Grid<T>> grid) 
+        : grid(grid), field(getVectorSize()) {}
 
-    PressureField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
+    Field(std::shared_ptr<Grid<T>> grid, Vector<T> values) 
         : grid(grid), field(std::move(values)) {
-        assert(values.getSize() == grid->getCellCount() &&
+        assert(values.getSize() == getVectorSize() &&
                "Size does not match");
     }
 
-    T getPressure(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y, z)) {
-            // TODO: BC handling
-            return 0;
-        }
-        return field[grid->cellIndex(x, y, z)];
-    }
-
-    void setPressure(size_t x, size_t y, size_t z, const T& val) {
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        field[grid->cellIndex(x, y, z)] = val;
+    const size_t getVectorSize() const {
+        return grid->getCellCount() * dims;
     }
 
     size_t getWidth() const { return grid->getWidth(); }
@@ -99,8 +91,6 @@ class PressureField {
     size_t getDepth() const { return grid->getDepth(); }
 
     T getCellSize() const { return grid->getCellSize(); }
-
-    size_t getNumValues() const { return field.getSize(); }
 
     Vector<T>& getRawValues() { return field; }
 
@@ -108,132 +98,98 @@ class PressureField {
 
     std::shared_ptr<Grid<T>> getGrid() const { return grid; }
 
-    Vec3<T> div(size_t x, size_t y) const {}
-
-    Vec3<T> laplace(size_t x, size_t y, size_t z) const {
-        return (getPressure(x + 1, y, z) + getPressure(x, y + 1, z) +
-                getPressure(x, y, z + 1) - 6 * getPressure(x, y, z) +
-                getPressure(x - 1, y, z) + getPressure(x, y - 1, z) +
-                getPressure(x, y, z - 1)) /
-               (grid->getCellSize() * grid->getCellSize());
+    T getValue(size_t x, size_t y, size_t z, unsigned dim = 0) const {
+         if (!grid->inBounds(x, y, z)) {
+            // Note: Boundary conditions need to be handled explicitly
+            return 0;
+        }
+        return field[grid->cellIndex(x, y, z) * dims + dim];
     }
+
+    void setValue(size_t x, size_t y, size_t z, T val, unsigned dim = 0) {
+        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
+        field[grid->cellIndex(x, y, z) * dims + dim] = val;
+    }
+    
+
+};
+
+
+template <typename T>
+class PressureField: public Field<T,1> {
+public:
+    PressureField(std::shared_ptr<Grid<T>> grid)
+        : Field<T,1>(grid) {}
+
+    PressureField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
+        : Field<T,1>(grid, values) {}
+
+    T getPressure(size_t x, size_t y, size_t z) const {
+        return this->getValue(x, y, z);
+    }
+
+    void setPressure(size_t x, size_t y, size_t z, T val) {
+        this->setValue(x, y, z, val);
+    }
+    
 };
 
 template <typename T>
-class VelocityField {
-    std::shared_ptr<Grid<T>> grid;
-    Vector<T> field;
-
-  public:
+class VelocityField: public Field<T, 3> {
+public:
     VelocityField(std::shared_ptr<Grid<T>> grid)
-        : grid(grid), field(grid->getCellCount() * 3) {}
+        : Field<T,3>(grid) {}
 
     VelocityField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
-        : grid(grid), field(grid->getCellCount() * 3) {
-        assert(values.getSize() == grid->getCellCount() * 3);
-        field = std::move(values);
-    }
-
-    /**
-     *
-     */
+        : Field<T,3>(grid, values) {}
+    
     T getLeftU(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y, z)) {
-            // TODO: BC
-            return 0;
-        }
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        return field[grid->cellIndex(x, y, z) * 3];
+        return this->getValue(x, y, z, 0);
     }
 
     T getRightU(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x + 1, y, z)) {
-            // TODO: BC
-            return 0;
-        }
-        assert(grid->inBounds(x + 1, y, z) && "Unhandled out of bounds");
-        return field[grid->cellIndex(x + 1, y, z) * 3];
+        return this->getValue(x+1, y, z, 0);
     }
 
     T getTopV(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y, z)) {
-            // TODO: BC
-            return 0;
-        }
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        return field[grid->cellIndex(x, y, z) * 3 + 1];
+        return this->getValue(x, y, z, 1);
     }
 
     T getBottomV(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y + 1, z)) {
-            // TODO: BC
-            return 0;
-        }
-        assert(grid->inBounds(x, y + 1, z) && "Unhandled out of bounds");
-        return field[grid->cellIndex(x, y + 1, z) * 3 + 1];
+        return this->getValue(x, y + 1, z, 1);
     }
 
     T getFrontW(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y, z)) {
-            // TODO: BC
-            return 0;
-        }
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        return field[grid->cellIndex(x, y, z) * 3 + 2];
+        return this->getValue(x, y, z, 2);
     }
 
     T getBackW(size_t x, size_t y, size_t z) const {
-        if (!grid->inBounds(x, y, z + 1)) {
-            // TODO: BC
-            return 0;
-        }
-        assert(grid->inBounds(x, y, z + 1) && "Unhandled out of bounds");
-        return field[grid->cellIndex(x, y, z + 1) * 3 + 2];
+       return this->getValue(x, y, z+1, 2);
     }
 
     void setLeftU(size_t x, size_t y, size_t z, const T& value) {
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        field[grid->cellIndex(x, y, z) * 3] = value;
+        this->setValue(x, y, z, value, 0);
     }
 
     void setRightU(size_t x, size_t y, size_t z, const T& value) {
-        assert(grid->inBounds(x + 1, y, z) && "Unhandled out of bounds");
-        field[grid->cellIndex(x + 1, y, z) * 3] = value;
+        this->setValue(x+1, y, z, value, 0);
     }
 
     void setTopV(size_t x, size_t y, size_t z, const T& value) {
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        field[grid->cellIndex(x, y, z) * 3 + 1] = value;
+        this->setValue(x, y, z, value, 1);
     }
 
     void setBottomV(size_t x, size_t y, size_t z, const T& value) {
-        assert(grid->inBounds(x, y + 1, z) && "Unhandled out of bounds");
-        field[grid->cellIndex(x, y + 1, z) * 3 + 1] = value;
+        this->setValue(x, y+1, z, value, 1);
     }
 
     void setFrontW(size_t x, size_t y, size_t z, const T& value) {
-        assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
-        field[grid->cellIndex(x, y, z) * 3 + 2] = value;
+        this->setValue(x, y, z, value, 2);
     }
 
     void setBackW(size_t x, size_t y, size_t z, const T& value) {
-        assert(grid->inBounds(x, y, z + 1) && "Unhandled out of bounds");
-        field[grid->cellIndex(x, y, z + 1) * 3 + 2] = value;
+        this->setValue(x, y, z+1, value, 2);
     }
-
-    size_t getWidth() const { return grid->getWidth(); }
-
-    size_t getHeight() const { return grid->getHeight(); }
-
-    size_t getDepth() const { return grid->getDepth(); }
-
-    T getCellSize() const { return grid->getCellSize(); }
-
-    size_t getNumValues() const { return field.getSize(); }
-
-    Vector<T>& getRawValues() { return field; }
-
-    std::shared_ptr<Grid<T>> getGrid() const { return grid; }
 
     /**
      * Trilinear interpolation of the velocity field at pos.
@@ -242,9 +198,9 @@ class VelocityField {
      */
     Vec3<T> trilerp(Vec3<T> pos) const {
 
-        auto cellSize = getCellSize();
+        auto cellSize = this->getCellSize();
 
-        pos = grid->getNearestInsidePos(pos);
+        pos = this->grid->getNearestInsidePos(pos);
 
         int iu = (int)(pos.x / cellSize);
         int ju = (int)(pos.y / cellSize - 0.5);
@@ -314,56 +270,13 @@ class VelocityField {
      * Divergence operator using central difference.
      */
     T div(size_t x, size_t y, size_t z) const {
-        // TODO: Boundary conditions
+        // Note: Boundary conditions not handled
         return (getRightU(x, y, z) - getLeftU(x, y, z) + getBottomV(x, y, z) -
                 getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z)) /
-               grid->getCellSize();
+               this->grid->getCellSize();
     }
 
-    T dudx(size_t x, size_t y, size_t z) const {
-        return getLeftU(x + 1, y, z) -
-               getLeftU(x - 1, y, z) / 2 * grid->getCellSize();
-    }
-
-    T dudy(size_t x, size_t y, size_t z) const {
-        return getLeftU(x, y + 1, z) -
-               getLeftU(x, y - 1, z) / 2 * grid->getCellSize();
-    }
-
-    T dudz(size_t x, size_t y, size_t z) const {
-        return getLeftU(x, y, z + 1) -
-               getLeftU(x, y, z - 1) / 2 * grid->getCellSize();
-    }
-
-    T dvdx(size_t x, size_t y, size_t z) const {
-        return getTopV(x + 1, y, z) -
-               getTopV(x - 1, y, z) / 2 * grid->getCellSize();
-    }
-
-    T dvdy(size_t x, size_t y, size_t z) const {
-        return getTopV(x, y + 1, z) -
-               getTopV(x, y - 1, z) / 2 * grid->getCellSize();
-    }
-
-    T dvdz(size_t x, size_t y, size_t z) const {
-        return getTopV(x, y, z + 1) -
-               getTopV(x, y, z - 1) / 2 * grid->getCellSize();
-    }
-
-    T dwdx(size_t x, size_t y, size_t z) const {
-        return getFrontW(x + 1, y, z) -
-               getFrontW(x - 1, y, z) / 2 * grid->getCellSize();
-    }
-
-    T dwdy(size_t x, size_t y, size_t z) const {
-        return getFrontW(x, y + 1, z) -
-               getFrontW(x, y - 1, z) / 2 * grid->getCellSize();
-    }
-
-    T dwdz(size_t x, size_t y, size_t z) const {
-        return getFrontW(x, y, z + 1) -
-               getFrontW(x, y, z - 1) / 2 * grid->getCellSize();
-    }
 };
+
 
 #endif

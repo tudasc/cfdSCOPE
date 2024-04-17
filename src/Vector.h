@@ -100,7 +100,7 @@ T dot(const Vector<T>& u, const Vector<T>& v) {
 
     T res = 0.0;
 
-#pragma omp simd reduction(+:res)
+#pragma omp simd reduction(+ : res)
     for (size_t i = 0; i < u.getSize(); i++) {
         res += u[i] * v[i];
     }
@@ -115,7 +115,7 @@ template <typename T>
 T norm(const Vector<T> vec) {
     T res = 0.0;
 
-#pragma omp simd reduction(+:res)
+#pragma omp simd reduction(+ : res)
     for (size_t i = 0; i < vec.getSize(); i++) {
         res += vec[i] * vec[i];
     }

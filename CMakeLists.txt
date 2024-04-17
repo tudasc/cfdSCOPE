@@ -1,3 +1,5 @@
+# General setup
+# =============
 cmake_minimum_required(VERSION 3.16)
 
 project(
@@ -8,13 +10,24 @@ project(
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Target setup
+# ============
+add_library(simulation
+    src/Simulation.cpp
+)
+
 add_executable(minicfd
     src/MiniCFD.cpp
 )
 
+target_link_libraries(minicfd PRIVATE simulation)
+
+
+# Dependency setup
+# ================
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(minicfd PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(simulation PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 include(FetchContent)
@@ -34,14 +47,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 target_link_libraries(minicfd PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(simulation PUBLIC spdlog::spdlog_header_only)
 
+
+# Options and tests
+# =================
 option(ENABLE_TRACE_LOG "Print log with level TRACE." OFF)
 option(BUILD_TESTS "Build test suite" OFF)
 
 if(ENABLE_TRACE_LOG)
     target_compile_definitions(minicfd PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+    target_compile_definitions(simulation PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 else()
     target_compile_definitions(minicfd PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+    target_compile_definitions(simulation PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 endif()
 
 

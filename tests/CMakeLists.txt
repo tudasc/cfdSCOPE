@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(
-        MiniCFD_tests
+        unittests
 
         lingalg_basics_tests.cpp
         solver_tests.cpp
@@ -19,23 +19,41 @@ add_executable(
         trilerp_tests.cpp
 )
 
-target_include_directories(
-        MiniCFD_tests
+add_executable(
+        integrationtests
 
-        PUBLIC ${PROJECT_SOURCE_DIR}/src
+        integration_tests.cpp
+)
+
+target_include_directories(unittests PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(integrationtests PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_compile_definitions(
+        unittests
+        PUBLIC
+        TEST_RESOURCE_DIR="${PROJECT_SOURCE_DIR}/tests/resources"
 )
 
 target_compile_definitions(
-        MiniCFD_tests
+        integrationtests
         PUBLIC
         TEST_RESOURCE_DIR="${PROJECT_SOURCE_DIR}/tests/resources"
 )
 
 target_link_libraries(
-        MiniCFD_tests
-        PRIVATE spdlog::spdlog_header_only
+        unittests
+        PRIVATE 
         GTest::gtest_main
+        simulation
+)
+
+target_link_libraries(
+        integrationtests
+        PRIVATE 
+        GTest::gtest_main
+        simulation
 )
 
 include(GoogleTest)
-gtest_discover_tests(MiniCFD_tests)
+gtest_discover_tests(unittests)
+gtest_discover_tests(integrationtests)
