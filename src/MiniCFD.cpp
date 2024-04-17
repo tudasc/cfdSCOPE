@@ -25,32 +25,6 @@ enum class PreconditionerType {
 };
 
 template <typename T>
-inline Vector<T> evalTransportEquation(const VelocityField<T>& U) {
-    Vector<T> transportEq(U.getNumValues());
-    size_t idx = 0;
-#pragma omp parallel for collapse(3)
-    for (size_t i = 0; i < U.getWidth(); i++) {
-        for (size_t j = 0; j < U.getHeight(); j++) {
-            for (size_t k = 0; k < U.getDepth(); k++) {
-                auto f_x = -U.getLeftU(i, j, k) * U.dudx(i, j, k) -
-                           U.getTopV(i, j, k) * U.dudy(i, j, k) -
-                           U.getFrontW(i, j, k) * U.dudz(i, j, k);
-                auto f_y = -U.getLeftU(i, j, k) * U.dvdx(i, j, k) -
-                           U.getTopV(i, j, k) * U.dvdy(i, j, k) -
-                           U.getFrontW(i, j, k) * U.dvdz(i, j, k);
-                auto f_z = -U.getLeftU(i, j, k) * U.dwdx(i, j, k) -
-                           U.getTopV(i, j, k) * U.dwdy(i, j, k) -
-                           U.getFrontW(i, j, k) * U.dwdz(i, j, k);
-                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 0] = f_x;
-                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 1] = f_y;
-                transportEq[i * (U.getHeight()*U.getDepth()*3) + j*(U.getDepth()*3) + k*3 + 2] = f_z;
-            }
-        }
-    }
-    return transportEq;
-}
-
-template <typename T>
 inline Vec3<T> traceBackward(Vec3<T> endPos, const VelocityField<T>& U,
                              float dt) {
     // Use 2nd order explicit Runge-Kutte scheme to trace velocity "particle"
