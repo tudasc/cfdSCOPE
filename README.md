@@ -47,3 +47,11 @@ python ../visualize.py ./ --frames_per_step 12 --time_step=0.4 --num_particles=1
 ```
 Make sure to match the `--time_step` parameter to the step size (`-s`) from the simulation call.
 By default, the script outputs a file called `visu.html` and a directory `visu_frames` that contains all the frames.
+
+## Tests
+To run the tests, first enable their compilation at configure time by passing `-DBUILD_TESTS=ON` to CMake.
+Then, run:
+```bash
+tests/unittests
+tests/integrationtests
+```
