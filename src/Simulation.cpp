@@ -372,7 +372,7 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
         *p = p_new;
 
         auto dif = norm(U->getRawValues() - U_prev.getRawValues());
-        spdlog::info("Difference in U: {:.5f}", dif);
+        spdlog::debug("Difference in U: {:.5f}", dif);
         U_prev = *U;
     }
 
