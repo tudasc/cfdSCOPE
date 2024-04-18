@@ -323,7 +323,9 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
     }
 
     spdlog::info("Initialization done!");
-    write_to_file(*U, *p, cfg.outputPrefix + "_0.txt");
+    if (!cfg.disableFileOutput) {
+        write_to_file(*U, *p, cfg.outputPrefix + "_0.txt");
+    }
 
     VelocityField<ScalarT> U_prev = *U;
 
