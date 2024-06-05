@@ -47,7 +47,7 @@ inline Vec3<T> traceBackward(Vec3<T> endPos, const VelocityField<T>& U,
     auto k3 = U.trilerp(endPos - k2 * (dt * 0.5));
     auto k4 = U.trilerp(endPos - k3 * dt);
 
-    auto res = endPos - (k1 + k2 * 2 + k3 * 3 + k4) * (dt / 6.0);
+    auto res = endPos - (k1 + k2 * 2 + k3 * 2 + k4) * (dt / 6.0);
     return U.getGrid()->getNearestInsidePos(res);
 }
 
