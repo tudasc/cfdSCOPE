@@ -100,8 +100,8 @@ class SparseMatrix {
     */
     void operator*=(T k) {
 #pragma omp simd
-        for (auto& v : _v) {
-            v *= k;
+        for (size_t i = 0; i < _v.size(); i++) {
+            _v[i] *= k;
         }
     }
 
