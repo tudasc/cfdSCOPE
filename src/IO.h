@@ -91,6 +91,31 @@ void write_to_file(const VelocityField<T>& velocities,
     ofile.close();
 }
 
+template <typename T>
+void write_to_csv_file(const VelocityField<T>& velocities,
+                   const PressureField<T>& pressures, std::string fname) {
+
+    assert(velocities.getDepth() == pressures.getDepth());
+    assert(velocities.getHeight() == pressures.getHeight());
+    assert(velocities.getWidth() == pressures.getWidth());
+
+    auto ds = velocities.getCellSize();
+
+    std::ofstream ofile;
+    ofile.open(fname);
+
+    for (size_t z = 0; z < velocities.getDepth(); ++z) {
+        for (size_t y = 0; y < velocities.getHeight(); ++y) {
+            for (size_t x = 0; x < velocities.getWidth(); ++x) {
+                ofile << x * ds << "; " << y * ds << "; " << z * ds << "; " << velocities.getLeftU(x, y, z) << "; "
+                      << velocities.getTopV(x, y, z) << "; "
+                      << velocities.getFrontW(x, y, z) << ";\n";
+            }
+        }
+    }
+    ofile.close();
+}
+
 /* Documentation of output file:
  * First line: grid dimensions followed by resolution
  * Followed By:

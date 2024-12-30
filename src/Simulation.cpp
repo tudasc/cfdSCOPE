@@ -296,6 +296,7 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
     spdlog::info("Initialization done!");
     if (!cfg.disableFileOutput) {
         write_to_file(*U, *p, cfg.outputPrefix + "_0.txt");
+        write_to_csv_file(*U, *p, cfg.outputPrefix + ".csv.0");
     }
 
     VelocityField<ScalarT> U_prev = *U;
@@ -338,6 +339,8 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
             write_to_file(U_corr, p_new,
                           cfg.outputPrefix + "_" + std::to_string(step) +
                               ".txt");
+            write_to_csv_file(U_corr, p_new,
+                              cfg.outputPrefix + ".csv." + std::to_string(step));
         }
         spdlog::info("Time step complete. t = {:.5f}", t);
 
