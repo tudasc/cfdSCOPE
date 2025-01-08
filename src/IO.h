@@ -104,12 +104,16 @@ void write_to_csv_file(const VelocityField<T>& velocities,
     std::ofstream ofile;
     ofile.open(fname);
 
+    const char delimiter = ',';
+
+    ofile << "x" << delimiter << "y" << delimiter << "z" << delimiter << "u" << delimiter << "v" << delimiter << "w\n";
+
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
-                ofile << x * ds << "; " << y * ds << "; " << z * ds << "; " << velocities.getLeftU(x, y, z) << "; "
-                      << velocities.getTopV(x, y, z) << "; "
-                      << velocities.getFrontW(x, y, z) << ";\n";
+                ofile << x * ds << delimiter << y * ds << delimiter << z * ds << delimiter << velocities.getLeftU(x, y, z) << delimiter
+                      << velocities.getTopV(x, y, z) << delimiter
+                      << velocities.getFrontW(x, y, z) << "\n";
             }
         }
     }

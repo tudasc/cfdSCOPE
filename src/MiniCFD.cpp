@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     const SimulationConfig cfg = {
         .width = N,
         .height = N,
-        .depth = 3,
+        .depth = N,
         .endTime = args["end-time"].as<double>(),
         .stepSize = args["step-size"].as<double>(),
         .cellSize = args["cell-size"].as<ScalarT>(),
