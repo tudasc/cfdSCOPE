@@ -97,7 +97,11 @@ int main(int argc, char** argv) {
     };
 
     // run simulation
+    auto start{std::chrono::steady_clock::now()};
     simulate(cfg);
+    auto stop{std::chrono::steady_clock::now()};
+    std::chrono::duration<double, std::milli> duration = stop - start;
+    spdlog::info("Simulation took {:.2f} s.", duration.count() / 1000.0);
 
     return 0;
 }
