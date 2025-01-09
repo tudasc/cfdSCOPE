@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
         ("c,cell-size", "Size of each simulation cell", cxxopts::value<ScalarT>()->default_value("1.0"))
         ("e,end-time", "Simulation duration (seconds)", cxxopts::value<double>()->default_value("5.0"))
         ("s,step-size", "Simulation step size (seconds)", cxxopts::value<double>()->default_value("0.4"))
+        ("u,lid-speed", "Lid speed (cells/second)", cxxopts::value<double>()->default_value("10"))
         ("o,output-prefix", "Output file prefix", cxxopts::value<std::string>()->default_value("fields"))
         ("p,preconditioner", "Preconditioner type (none, jacobi, dic)", cxxopts::value<std::string>()->default_value("dic"))
         ("h,help", "Print usage")
@@ -75,6 +76,7 @@ int main(int argc, char** argv) {
         .endTime = args["end-time"].as<double>(),
         .stepSize = args["step-size"].as<double>(),
         .cellSize = args["cell-size"].as<ScalarT>(),
+        .lidSpeed  = args["lid-speed"].as<ScalarT>(),
         .outputPrefix = args["output-prefix"].as<std::string>(),
         .preconditionerType = preconditionerType,
         .disableFileOutput = false,

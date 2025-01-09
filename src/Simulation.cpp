@@ -237,7 +237,7 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
  * Applying a constant force (e.g. wind) on the fluid surface.
  */
 template <typename T>
-inline VelocityField<T> applyForces(const VelocityField<T>& U, double dt) {
+inline VelocityField<T> applyForces(const VelocityField<T>& U, double dt, T lidSpeed) {
 
     auto width = U.getWidth();
     auto height = U.getHeight();
@@ -245,7 +245,7 @@ inline VelocityField<T> applyForces(const VelocityField<T>& U, double dt) {
 
     auto cellSize = U.getCellSize();
 
-    float windSpeed = 10 * cellSize;
+    float windSpeed = lidSpeed * cellSize;
 
     VelocityField<T> U_f = U;
 
@@ -312,7 +312,7 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
 
         // - External forces
         spdlog::debug("Applying external forces");
-        auto U_f = applyForces(*U, dt);
+        auto U_f = applyForces(*U, dt, cfg.lidSpeed);
         // SPDLOG_TRACE("U_x after forces:\n{}",
         //              dumpVectorComponent(U_f.getRawValues(), 0, 3));
 

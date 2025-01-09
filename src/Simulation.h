@@ -14,6 +14,7 @@ struct SimulationConfig {
     size_t width, height, depth;
     double endTime, stepSize;
     ScalarT cellSize;
+    ScalarT lidSpeed;
     std::string outputPrefix;
     PreconditionerType preconditionerType;
     bool disableFileOutput;
