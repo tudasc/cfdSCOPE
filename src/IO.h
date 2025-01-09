@@ -1,3 +1,6 @@
+#ifndef IO_H
+#define IO_H
+
 #include <cassert>
 #include <cstddef>
 #include <fstream>
@@ -5,6 +8,7 @@
 #include <sstream>
 #include <string>
 
+#include "Config.h"
 #include "Grid.h"
 
 /**
@@ -60,13 +64,19 @@ read_from_file(std::string fname) {
     return std::make_pair(velocities, pressures);
 }
 
-/**
-    Write state (velocity field, pressure field) to file
+/* Documentation of raw output file:
+ * First line: grid dimensions followed by resolution
+ * Followed By:
+ * Comma seperated list of values
+ * For each field:pressure, x,y,z velocities
+ * each line lists all field in x direction,
+ * the lines are written in y direction
+ * each z entry is seperated by blank lines between "y blocks"
  */
-template <typename T>
-void write_to_file(const VelocityField<T>& velocities,
-                   const PressureField<T>& pressures, std::string fname) {
 
+template <typename T>
+void write_to_raw_file(const VelocityField<T>& velocities,
+                   const PressureField<T>& pressures, std::string fname) {
     assert(velocities.getDepth() == pressures.getDepth());
     assert(velocities.getHeight() == pressures.getHeight());
     assert(velocities.getWidth() == pressures.getWidth());
@@ -91,6 +101,7 @@ void write_to_file(const VelocityField<T>& velocities,
     ofile.close();
 }
 
+
 template <typename T>
 void write_to_csv_file(const VelocityField<T>& velocities,
                    const PressureField<T>& pressures, std::string fname) {
@@ -106,26 +117,42 @@ void write_to_csv_file(const VelocityField<T>& velocities,
 
     const char delimiter = ',';
 
-    ofile << "x" << delimiter << "y" << delimiter << "z" << delimiter << "u" << delimiter << "v" << delimiter << "w\n";
+    ofile << "x" << delimiter << "y" << delimiter << "z" << delimiter << "u" << delimiter << "v" << delimiter << "w" << delimiter << "p\n";
 
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
-                ofile << x * ds << delimiter << y * ds << delimiter << z * ds << delimiter << velocities.getLeftU(x, y, z) << delimiter
-                      << velocities.getTopV(x, y, z) << delimiter
-                      << velocities.getFrontW(x, y, z) << "\n";
+                // Interpolate velocities at cell center
+                auto vCenter = velocities.trilerp({(x + 0.5) * ds, (y + 0.5) * ds, (z + 0.5) * ds});
+                ofile << x  << delimiter << y  << delimiter << z  << delimiter << vCenter.x << delimiter
+                      << vCenter.y << delimiter << vCenter.z << delimiter
+                      << pressures.getPressure(x, y, z) << "\n";
             }
         }
     }
     ofile.close();
 }
 
-/* Documentation of output file:
- * First line: grid dimensions followed by resolution
- * Followed By:
- * Comma seperated list of values
- * For each field:pressure, x,y,z velocities
- * each line lists all field in x direction,
- * the lines are written in y direction
- * each z entry is seperated by blank lines between "y blocks"
+/**
+    Write state (velocity field, pressure field) to file
  */
+template <typename T>
+void write_to_file(const VelocityField<T>& velocities,
+                   const PressureField<T>& pressures, std::string prefix, unsigned step, FileFormat format) {
+    switch(format) {
+    case FileFormat::CSV: {
+        std::string filename = prefix + ".csv." + std::to_string(step);
+        write_to_csv_file(velocities, pressures, filename);
+        break;
+    }
+    case FileFormat::RAW: {
+        std::string filename = prefix + ".txt." + std::to_string(step);
+        write_to_raw_file(velocities, pressures, filename);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+#endif // IO_H

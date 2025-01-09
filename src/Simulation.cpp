@@ -295,8 +295,7 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
 
     spdlog::info("Initialization done!");
     if (!cfg.disableFileOutput) {
-        write_to_file(*U, *p, cfg.outputPrefix + "_0.txt");
-        write_to_csv_file(*U, *p, cfg.outputPrefix + ".csv.0");
+        write_to_file(*U, *p, cfg.outputPrefix, 0, cfg.fileFormat);
     }
 
     VelocityField<ScalarT> U_prev = *U;
@@ -337,19 +336,17 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
         // - Write field
         if (!cfg.disableFileOutput) {
             write_to_file(U_corr, p_new,
-                          cfg.outputPrefix + "_" + std::to_string(step) +
-                              ".txt");
-            write_to_csv_file(U_corr, p_new,
-                              cfg.outputPrefix + ".csv." + std::to_string(step));
+                          cfg.outputPrefix, step, cfg.fileFormat);
         }
-        spdlog::info("Time step complete. t = {:.5f}", t);
-
         *U = U_corr;
         *p = p_new;
 
         auto dif = norm(U->getRawValues() - U_prev.getRawValues());
         spdlog::debug("Difference in U: {:.5f}", dif);
         U_prev = *U;
+
+        spdlog::info("Time step complete. t = {:.5f}", t);
+
     }
 
     return SimulationOutput{std::move(U), std::move(p)};
