@@ -237,7 +237,8 @@ inline VelocityField<T> applyPressureCorrection(const VelocityField<T>& U_adv,
  * Applying a constant force (e.g. wind) on the fluid surface.
  */
 template <typename T>
-inline VelocityField<T> applyForces(const VelocityField<T>& U, double dt, T lidSpeed) {
+inline VelocityField<T> applyForces(const VelocityField<T>& U, double dt,
+                                    T lidSpeed) {
 
     auto width = U.getWidth();
     auto height = U.getHeight();
@@ -335,8 +336,8 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
 
         // - Write field
         if (!cfg.disableFileOutput) {
-            write_to_file(U_corr, p_new,
-                          cfg.outputPrefix, step, cfg.fileFormat);
+            write_to_file(U_corr, p_new, cfg.outputPrefix, step,
+                          cfg.fileFormat);
         }
         *U = U_corr;
         *p = p_new;
@@ -346,7 +347,6 @@ SimulationOutput simulate(const SimulationConfig& cfg) {
         U_prev = *U;
 
         spdlog::info("Time step complete. t = {:.5f}", t);
-
     }
 
     return SimulationOutput{std::move(U), std::move(p)};

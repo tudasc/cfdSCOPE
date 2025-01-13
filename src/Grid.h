@@ -64,25 +64,21 @@ class Grid {
     }
 };
 
-template<typename T, unsigned dims>
+template <typename T, unsigned dims>
 class Field {
-protected:
+  protected:
     std::shared_ptr<Grid<T>> grid;
     Vector<T> field;
 
-public:
-    Field(std::shared_ptr<Grid<T>> grid) 
-        : grid(grid), field(getVectorSize()) {}
+  public:
+    Field(std::shared_ptr<Grid<T>> grid) : grid(grid), field(getVectorSize()) {}
 
-    Field(std::shared_ptr<Grid<T>> grid, Vector<T> values) 
+    Field(std::shared_ptr<Grid<T>> grid, Vector<T> values)
         : grid(grid), field(std::move(values)) {
-        assert(values.getSize() == getVectorSize() &&
-               "Size does not match");
+        assert(values.getSize() == getVectorSize() && "Size does not match");
     }
 
-    const size_t getVectorSize() const {
-        return grid->getCellCount() * dims;
-    }
+    const size_t getVectorSize() const { return grid->getCellCount() * dims; }
 
     size_t getWidth() const { return grid->getWidth(); }
 
@@ -99,7 +95,7 @@ public:
     std::shared_ptr<Grid<T>> getGrid() const { return grid; }
 
     T getValue(size_t x, size_t y, size_t z, unsigned dim = 0) const {
-         if (!grid->inBounds(x, y, z)) {
+        if (!grid->inBounds(x, y, z)) {
             // Note: Boundary conditions need to be handled explicitly
             return 0;
         }
@@ -110,19 +106,15 @@ public:
         assert(grid->inBounds(x, y, z) && "Unhandled out of bounds");
         field[grid->cellIndex(x, y, z) * dims + dim] = val;
     }
-    
-
 };
 
-
 template <typename T>
-class PressureField: public Field<T,1> {
-public:
-    PressureField(std::shared_ptr<Grid<T>> grid)
-        : Field<T,1>(grid) {}
+class PressureField : public Field<T, 1> {
+  public:
+    PressureField(std::shared_ptr<Grid<T>> grid) : Field<T, 1>(grid) {}
 
     PressureField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
-        : Field<T,1>(grid, values) {}
+        : Field<T, 1>(grid, values) {}
 
     T getPressure(size_t x, size_t y, size_t z) const {
         return this->getValue(x, y, z);
@@ -131,24 +123,22 @@ public:
     void setPressure(size_t x, size_t y, size_t z, T val) {
         this->setValue(x, y, z, val);
     }
-    
 };
 
 template <typename T>
-class VelocityField: public Field<T, 3> {
-public:
-    VelocityField(std::shared_ptr<Grid<T>> grid)
-        : Field<T,3>(grid) {}
+class VelocityField : public Field<T, 3> {
+  public:
+    VelocityField(std::shared_ptr<Grid<T>> grid) : Field<T, 3>(grid) {}
 
     VelocityField(std::shared_ptr<Grid<T>> grid, Vector<T> values)
-        : Field<T,3>(grid, values) {}
-    
+        : Field<T, 3>(grid, values) {}
+
     T getLeftU(size_t x, size_t y, size_t z) const {
         return this->getValue(x, y, z, 0);
     }
 
     T getRightU(size_t x, size_t y, size_t z) const {
-        return this->getValue(x+1, y, z, 0);
+        return this->getValue(x + 1, y, z, 0);
     }
 
     T getTopV(size_t x, size_t y, size_t z) const {
@@ -164,7 +154,7 @@ public:
     }
 
     T getBackW(size_t x, size_t y, size_t z) const {
-       return this->getValue(x, y, z+1, 2);
+        return this->getValue(x, y, z + 1, 2);
     }
 
     void setLeftU(size_t x, size_t y, size_t z, const T& value) {
@@ -172,7 +162,7 @@ public:
     }
 
     void setRightU(size_t x, size_t y, size_t z, const T& value) {
-        this->setValue(x+1, y, z, value, 0);
+        this->setValue(x + 1, y, z, value, 0);
     }
 
     void setTopV(size_t x, size_t y, size_t z, const T& value) {
@@ -180,7 +170,7 @@ public:
     }
 
     void setBottomV(size_t x, size_t y, size_t z, const T& value) {
-        this->setValue(x, y+1, z, value, 1);
+        this->setValue(x, y + 1, z, value, 1);
     }
 
     void setFrontW(size_t x, size_t y, size_t z, const T& value) {
@@ -188,7 +178,7 @@ public:
     }
 
     void setBackW(size_t x, size_t y, size_t z, const T& value) {
-        this->setValue(x, y, z+1, value, 2);
+        this->setValue(x, y, z + 1, value, 2);
     }
 
     /**
@@ -275,8 +265,6 @@ public:
                 getTopV(x, y, z) + getBackW(x, y, z) - getFrontW(x, y, z)) /
                this->grid->getCellSize();
     }
-
 };
-
 
 #endif

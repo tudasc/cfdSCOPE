@@ -8,7 +8,7 @@ using ScalarT = double;
 
 enum class PreconditionerType { NONE, JACOBI, DIC };
 
-enum class FileFormat {CSV, RAW};
+enum class FileFormat { CSV, RAW };
 
 struct SimulationConfig {
     size_t width, height, depth;

@@ -76,7 +76,7 @@ read_from_file(std::string fname) {
 
 template <typename T>
 void write_to_raw_file(const VelocityField<T>& velocities,
-                   const PressureField<T>& pressures, std::string fname) {
+                       const PressureField<T>& pressures, std::string fname) {
     assert(velocities.getDepth() == pressures.getDepth());
     assert(velocities.getHeight() == pressures.getHeight());
     assert(velocities.getWidth() == pressures.getWidth());
@@ -101,10 +101,9 @@ void write_to_raw_file(const VelocityField<T>& velocities,
     ofile.close();
 }
 
-
 template <typename T>
 void write_to_csv_file(const VelocityField<T>& velocities,
-                   const PressureField<T>& pressures, std::string fname) {
+                       const PressureField<T>& pressures, std::string fname) {
 
     assert(velocities.getDepth() == pressures.getDepth());
     assert(velocities.getHeight() == pressures.getHeight());
@@ -117,15 +116,18 @@ void write_to_csv_file(const VelocityField<T>& velocities,
 
     const char delimiter = ',';
 
-    ofile << "x" << delimiter << "y" << delimiter << "z" << delimiter << "u" << delimiter << "v" << delimiter << "w" << delimiter << "p\n";
+    ofile << "x" << delimiter << "y" << delimiter << "z" << delimiter << "u"
+          << delimiter << "v" << delimiter << "w" << delimiter << "p\n";
 
     for (size_t z = 0; z < velocities.getDepth(); ++z) {
         for (size_t y = 0; y < velocities.getHeight(); ++y) {
             for (size_t x = 0; x < velocities.getWidth(); ++x) {
                 // Interpolate velocities at cell center
-                auto vCenter = velocities.trilerp({(x + 0.5) * ds, (y + 0.5) * ds, (z + 0.5) * ds});
-                ofile << x  << delimiter << y  << delimiter << z  << delimiter << vCenter.x << delimiter
-                      << vCenter.y << delimiter << vCenter.z << delimiter
+                auto vCenter = velocities.trilerp(
+                    {(x + 0.5) * ds, (y + 0.5) * ds, (z + 0.5) * ds});
+                ofile << x << delimiter << y << delimiter << z << delimiter
+                      << vCenter.x << delimiter << vCenter.y << delimiter
+                      << vCenter.z << delimiter
                       << pressures.getPressure(x, y, z) << "\n";
             }
         }
@@ -138,8 +140,9 @@ void write_to_csv_file(const VelocityField<T>& velocities,
  */
 template <typename T>
 void write_to_file(const VelocityField<T>& velocities,
-                   const PressureField<T>& pressures, std::string prefix, unsigned step, FileFormat format) {
-    switch(format) {
+                   const PressureField<T>& pressures, std::string prefix,
+                   unsigned step, FileFormat format) {
+    switch (format) {
     case FileFormat::CSV: {
         std::string filename = prefix + ".csv." + std::to_string(step);
         write_to_csv_file(velocities, pressures, filename);

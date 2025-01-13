@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     const std::string fileFormatStr = args["output-format"].as<std::string>();
     if (fileFormatStr == "csv") {
         fileFormat = FileFormat::CSV;
-    } else if (fileFormatStr == "raw"){
+    } else if (fileFormatStr == "raw") {
         fileFormat = FileFormat::RAW;
     } else {
         spdlog::critical("Invalid output file format '{}'", fileFormatStr);
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
         .endTime = args["end-time"].as<double>(),
         .stepSize = args["step-size"].as<double>(),
         .cellSize = args["cell-size"].as<ScalarT>(),
-        .lidSpeed  = args["lid-speed"].as<ScalarT>(),
+        .lidSpeed = args["lid-speed"].as<ScalarT>(),
         .outputPrefix = args["output-prefix"].as<std::string>(),
         .preconditionerType = preconditionerType,
         .fileFormat = fileFormat,
