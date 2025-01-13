@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <cstddef>
+#include <string>
+
 using ScalarT = double;
 
 enum class PreconditionerType { NONE, JACOBI, DIC };

@@ -8,7 +8,7 @@ TEST(IoBasicTest, BasicAssertions) {
     std::string filename = std::string(TEST_RESOURCE_DIR) + "/sample_io";
     auto pair = read_from_file<double>(filename);
     auto filename_out = filename + "_out";
-    write_to_file(pair.first, pair.second, filename_out);
+    write_to_raw_file(pair.first, pair.second, filename_out);
 
     std::ifstream f1(filename_out);
     std::ifstream f2(filename);

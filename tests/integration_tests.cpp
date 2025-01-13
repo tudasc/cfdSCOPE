@@ -1,3 +1,4 @@
+#include "Config.h"
 #include <fstream>
 
 #include <gtest/gtest.h>
@@ -14,8 +15,10 @@ TEST(IntegrationTests, Simulation) {
         .endTime = 1.2,
         .stepSize = 0.3,
         .cellSize = 1.0,
+        .lidSpeed = 10,
         .outputPrefix = "integrationtest",
         .preconditionerType = PreconditionerType::DIC,
+        .fileFormat = FileFormat::RAW,
         .disableFileOutput = true,
     };
 
