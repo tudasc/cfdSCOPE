@@ -1,220 +1,395 @@
-import os
-import re
+# trace generated using paraview version 5.13.1
+#import paraview
+#paraview.compatibility.major = 5
+#paraview.compatibility.minor = 13
 
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.animation import FuncAnimation, HTMLWriter
+#### import the simple module from the paraview
+from paraview.simple import *
 import argparse
-from tqdm import tqdm
-import scipy.interpolate
-
-# to show a progress bar during rendering
-progress_bar = None
+import glob
 
 
-# for progressing the progress bar
-def progress_callback_func(current_frame: int, total_frames: int):
-    progress_bar.update(1)
+# Input parameters
+parser = argparse.ArgumentParser("Visualizes CFD data")
+parser.add_argument("input", type=str, action="store", help="input file wildcard. ")
+parser.add_argument("--frame", type=int, action="store", default=1, help="frame to render.")
+parser.add_argument("--animate", action="store_true", help="save animation.")
+parser.add_argument("--size", type=int, action="store", help="grid size")
+
+argvals = parser.parse_args()
+
+file_list = sorted(glob.glob(argvals.input))
+
+print(f"Loaded {len(file_list)} files. First filename: '{file_list[0]}'")
+
+frame_to_render = argvals.frame
+animate = argvals.animate
+
+grid_size = argvals.size
+
+num_frames = len(file_list)-1
 
 
-def main():
-    parser = argparse.ArgumentParser("Visualizes CFD data")
-    parser.add_argument("input", type=str, action="store", help="name of input file. ")
-    parser.add_argument("--static", action="store_true", help="dont animate the plot.")
-    parser.add_argument("--num_particles", type=int, action="store", help="number of particles to trace", default=1000)
-    parser.add_argument("--output", type=str, default="visu.html", action="store", help="name of output file",
-                        required=False)
-    parser.add_argument("--frames_per_step", type=int, default=4, action="store", help="number of frames per time step to animate",
-                        required=False)
-    parser.add_argument("--time_step", type=float, action="store", help="Time step size in seconds", required=True)
-    twod = parser.add_argument_group('arguments to use if a 2D plot is desired')
+#### disable automatic camera reset on 'Show'
+paraview.simple._DisableFirstRenderCameraReset()
 
-    ARGS = parser.parse_args()
+fieldscsv0 = CSVReader(registrationName='fields.csv.0*', FileName=file_list)
 
-    data = read_input_files(ARGS.input)
-    plot_3d(data, ARGS.time_step, ARGS.frames_per_step, ARGS.num_particles, ARGS.output)
+# get animation scene
+animationScene1 = GetAnimationScene()
 
-    print("Visualization written to %s" % ARGS.output)
+# update animation scene based on data timesteps
+animationScene1.UpdateAnimationUsingDataTimeSteps()
+
+# Create a new 'SpreadSheet View'
+spreadSheetView1 = CreateView('SpreadSheetView')
+spreadSheetView1.ColumnToSort = ''
+spreadSheetView1.BlockSize = 1024
+
+# show data in view
+fieldscsv0Display = Show(fieldscsv0, spreadSheetView1, 'SpreadSheetRepresentation')
+
+# trace defaults for the display properties.
+fieldscsv0Display.Assembly = ''
+
+# get layout
+layout1 = GetLayoutByName("Layout #1")
+
+# add view to a layout so it's visible in UI
+AssignViewToLayout(view=spreadSheetView1, layout=layout1, hint=0)
+
+# find view
+renderView1 = FindViewOrCreate('RenderView1', viewtype='RenderView')
+
+# update the view to ensure updated data information
+renderView1.Update()
+
+# update the view to ensure updated data information
+spreadSheetView1.Update()
+
+# create a new 'Table To Structured Grid'
+tableToStructuredGrid1 = TableToStructuredGrid(registrationName='TableToStructuredGrid1', Input=fieldscsv0)
+tableToStructuredGrid1.XColumn = 'p'
+tableToStructuredGrid1.YColumn = 'p'
+tableToStructuredGrid1.ZColumn = 'p'
+
+# Properties modified on tableToStructuredGrid1
+tableToStructuredGrid1.WholeExtent = [0, grid_size-1, 0, grid_size-1, 0, grid_size-1]
+tableToStructuredGrid1.XColumn = 'x'
+tableToStructuredGrid1.YColumn = 'y'
+tableToStructuredGrid1.ZColumn = 'z'
+
+# show data in view
+tableToStructuredGrid1Display = Show(tableToStructuredGrid1, spreadSheetView1, 'SpreadSheetRepresentation')
+
+# trace defaults for the display properties.
+tableToStructuredGrid1Display.Assembly = ''
+
+# hide data in view
+Hide(fieldscsv0, spreadSheetView1)
+
+# update the view to ensure updated data information
+spreadSheetView1.Update()
+
+# create a new 'Calculator'
+calculator1 = Calculator(registrationName='Calculator1', Input=tableToStructuredGrid1)
+calculator1.Function = ''
+
+# Properties modified on calculator1
+calculator1.ResultArrayName = 'Velocity'
+calculator1.Function = 'u*iHat + v*jHat + w*kHat'
+
+# show data in view
+calculator1Display = Show(calculator1, spreadSheetView1, 'SpreadSheetRepresentation')
+
+# trace defaults for the display properties.
+calculator1Display.Assembly = ''
+
+# hide data in view
+Hide(tableToStructuredGrid1, spreadSheetView1)
+
+# update the view to ensure updated data information
+spreadSheetView1.Update()
+
+# create a new 'Calculator'
+calculator2 = Calculator(registrationName='Calculator2', Input=calculator1)
+calculator2.Function = ''
+
+# Properties modified on calculator2
+calculator2.ResultArrayName = 'Velocity2'
+calculator2.Function = 'u*iHat + v*jHat'
+
+# show data in view
+calculator2Display = Show(calculator2, spreadSheetView1, 'SpreadSheetRepresentation')
+
+# trace defaults for the display properties.
+calculator2Display.Assembly = ''
+
+# hide data in view
+Hide(calculator1, spreadSheetView1)
+
+# update the view to ensure updated data information
+spreadSheetView1.Update()
+
+# create a new 'Slice'
+slice1 = Slice(registrationName='Slice1', Input=calculator2)
+slice1.SliceType = 'Plane'
+slice1.HyperTreeGridSlicer = 'Plane'
+slice1.SliceOffsetValues = [0.0]
+slice1.PointMergeMethod = 'Uniform Binning'
+
+# init the 'Plane' selected for 'SliceType'
+slice1.SliceType.Origin = [grid_size/2.0, grid_size/2.0, grid_size/2.0]
+
+# init the 'Plane' selected for 'HyperTreeGridSlicer'
+slice1.HyperTreeGridSlicer.Origin = [grid_size/2.0, grid_size/2.0, grid_size/2.0]
+
+# set active source
+SetActiveSource(slice1)
+
+# show data in view
+slice1Display = Show(slice1, spreadSheetView1, 'SpreadSheetRepresentation')
+
+# trace defaults for the display properties.
+slice1Display.Assembly = ''
+
+# set active view
+SetActiveView(renderView1)
+
+# show data in view
+slice1Display_1 = Show(slice1, renderView1, 'GeometryRepresentation')
+
+# trace defaults for the display properties.
+slice1Display_1.Representation = 'Surface'
+slice1Display_1.ColorArrayName = [None, '']
+slice1Display_1.SelectNormalArray = 'None'
+slice1Display_1.SelectTangentArray = 'None'
+slice1Display_1.SelectTCoordArray = 'None'
+slice1Display_1.TextureTransform = 'Transform2'
+slice1Display_1.OSPRayScaleArray = 'Velocity'
+slice1Display_1.OSPRayScaleFunction = 'Piecewise Function'
+slice1Display_1.Assembly = ''
+slice1Display_1.SelectedBlockSelectors = ['']
+slice1Display_1.SelectOrientationVectors = 'Velocity2'
+slice1Display_1.ScaleFactor = 6.300000000000001
+slice1Display_1.SelectScaleArray = 'None'
+slice1Display_1.GlyphType = 'Arrow'
+slice1Display_1.GlyphTableIndexArray = 'None'
+slice1Display_1.GaussianRadius = 0.315
+slice1Display_1.SetScaleArray = ['POINTS', 'Velocity']
+slice1Display_1.ScaleTransferFunction = 'Piecewise Function'
+slice1Display_1.OpacityArray = ['POINTS', 'Velocity']
+slice1Display_1.OpacityTransferFunction = 'Piecewise Function'
+slice1Display_1.DataAxesGrid = 'Grid Axes Representation'
+slice1Display_1.PolarAxes = 'Polar Axes Representation'
+slice1Display_1.SelectInputVectors = ['POINTS', 'Velocity2']
+slice1Display_1.WriteLog = ''
+
+# init the 'Piecewise Function' selected for 'ScaleTransferFunction'
+slice1Display_1.ScaleTransferFunction.Points = [0.0, 0.0, 0.5, 0.0, 1.1757813367477812e-38, 1.0, 0.5, 0.0]
+
+# init the 'Piecewise Function' selected for 'OpacityTransferFunction'
+slice1Display_1.OpacityTransferFunction.Points = [0.0, 0.0, 0.5, 0.0, 1.1757813367477812e-38, 1.0, 0.5, 0.0]
+
+#changing interaction mode based on data extents
+renderView1.InteractionMode = '2D'
+renderView1.CameraPosition = [242.55, 31.5, 31.5]
+renderView1.CameraFocalPoint = [grid_size/2.0, grid_size/2.0, grid_size/2.0]
+renderView1.CameraViewUp = [0.0, 0.0, 1.0]
+
+# get the material library
+materialLibrary1 = GetMaterialLibrary()
+
+# reset view to fit data
+renderView1.ResetCamera(False, 0.9)
+
+renderView1.ResetActiveCameraToPositiveZ()
+
+# reset view to fit data
+renderView1.ResetCamera(False, 0.9)
+
+renderView1.AdjustRoll(-90.0)
+
+renderView1.AdjustRoll(-90.0)
+
+# Properties modified on slice1.SliceType
+slice1.SliceType.Normal = [0.0, 0.0, 1.0]
+
+# show data in view
+slice1Display_1 = Show(slice1, renderView1, 'GeometryRepresentation')
+
+# reset view to fit data
+renderView1.ResetCamera(False, 0.9)
+
+#changing interaction mode based on data extents
+renderView1.CameraPosition = [grid_size/2.0, grid_size/2.0, 242.55]
+renderView1.CameraViewUp = [0.0, 1.0, 0.0]
+
+# update the view to ensure updated data information
+renderView1.Update()
+
+# update the view to ensure updated data information
+spreadSheetView1.Update()
+
+# set scalar coloring
+ColorBy(slice1Display_1, ('POINTS', 'Velocity', 'Magnitude'))
+
+# rescale color and/or opacity maps used to include current data range
+slice1Display_1.RescaleTransferFunctionToDataRange(True, False)
+
+# show color bar/color legend
+slice1Display_1.SetScalarBarVisibility(renderView1, True)
+
+# get color transfer function/color map for 'Velocity'
+velocityLUT = GetColorTransferFunction('Velocity')
+
+# get opacity transfer function/opacity map for 'Velocity'
+velocityPWF = GetOpacityTransferFunction('Velocity')
+
+# get 2D transfer function for 'Velocity'
+velocityTF2D = GetTransferFunction2D('Velocity')
+
+# Rescale transfer function
+velocityLUT.RescaleTransferFunction(0.0, 200)
+
+# Rescale transfer function
+velocityPWF.RescaleTransferFunction(0.0, 200)
+
+# create a new 'Glyph'
+glyph1 = Glyph(registrationName='Glyph1', Input=slice1,
+    GlyphType='Arrow')
+glyph1.OrientationArray = ['POINTS', 'Velocity2']
+glyph1.ScaleArray = ['POINTS', 'No scale array']
+glyph1.ScaleFactor = 6.300000000000001
+glyph1.GlyphTransform = 'Transform2'
+
+# Properties modified on glyph1
+glyph1.GlyphType = '2D Glyph'
+glyph1.ScaleFactor = 2.2
+
+# show data in view
+glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
+
+# trace defaults for the display properties.
+glyph1Display.Representation = 'Surface'
+glyph1Display.ColorArrayName = ['POINTS', 'Velocity']
+glyph1Display.LookupTable = velocityLUT
+glyph1Display.SelectNormalArray = 'None'
+glyph1Display.SelectTangentArray = 'None'
+glyph1Display.SelectTCoordArray = 'None'
+glyph1Display.TextureTransform = 'Transform2'
+glyph1Display.OSPRayScaleArray = 'Velocity'
+glyph1Display.OSPRayScaleFunction = 'Piecewise Function'
+glyph1Display.Assembly = ''
+glyph1Display.SelectedBlockSelectors = ['']
+glyph1Display.SelectOrientationVectors = 'Velocity2'
+glyph1Display.ScaleFactor = 6.455563426017761
+glyph1Display.SelectScaleArray = 'None'
+glyph1Display.GlyphType = 'Arrow'
+glyph1Display.GlyphTableIndexArray = 'None'
+glyph1Display.GaussianRadius = 0.3227781713008881
+glyph1Display.SetScaleArray = ['POINTS', 'Velocity']
+glyph1Display.ScaleTransferFunction = 'Piecewise Function'
+glyph1Display.OpacityArray = ['POINTS', 'Velocity']
+glyph1Display.OpacityTransferFunction = 'Piecewise Function'
+glyph1Display.DataAxesGrid = 'Grid Axes Representation'
+glyph1Display.PolarAxes = 'Polar Axes Representation'
+glyph1Display.SelectInputVectors = ['POINTS', 'Velocity2']
+glyph1Display.WriteLog = ''
+
+# init the 'Piecewise Function' selected for 'ScaleTransferFunction'
+glyph1Display.ScaleTransferFunction.Points = [-51.6118, 0.0, 0.5, 0.0, 199.875, 1.0, 0.5, 0.0]
+
+# init the 'Piecewise Function' selected for 'OpacityTransferFunction'
+glyph1Display.OpacityTransferFunction.Points = [-51.6118, 0.0, 0.5, 0.0, 199.875, 1.0, 0.5, 0.0]
+
+# show color bar/color legend
+glyph1Display.SetScalarBarVisibility(renderView1, True)
+
+# update the view to ensure updated data information
+renderView1.Update()
+
+print("Glyphs added!")
 
 
+## Final camera
 
-def read_3d_input_data(filename):
-    # parse header
-    f = open(filename)
-    header = f.readline().strip().split(',')
-    header = [int(h) for h in header]  # as int
-    assert len(header) == 4
+renderView1.ResetActiveCameraToPositiveZ()
 
-    num_x = header[0]
-    num_y = header[1]
-    num_z = header[2]
-    resolution = header[3]
+# reset view to fit data
+renderView1.ResetCamera(False, 0.9)
 
-    data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+renderView1.AdjustRoll(-90.0)
 
-    xx = []
-    yy = []
-    zz = []
-    p = []
-    u = []
-    v = []
-    w = []
-    for z in range(num_z):
-        for y in range(num_y):
-            for x in range(num_x):
-                xx.append(x * resolution)
-                yy.append(y * resolution)
-                zz.append(z * resolution)
+renderView1.AdjustRoll(-90.0)
 
-                p.append(data[z * num_y + y, x * 4 + 0])
-                u.append(data[z * num_y + y, x * 4 + 1])
-                v.append(data[z * num_y + y, x * 4 + 2])
-                w.append(data[z * num_y + y, x * 4 + 3])
+# layout/tab size in pixels
+layout1 = GetLayout()
+layout1.SetSize(2200, 900)
 
-    s = (num_x, num_y, num_z)
+# current camera placement for renderView1
+renderView1.InteractionMode = '2D'
+renderView1.CameraPosition = [29.38346951893936, 28.625569272380417, -221.46253025031308]
+renderView1.CameraFocalPoint = [29.38346951893936, 28.625569272380417, 31.5]
+renderView1.CameraViewUp = [4.440892098500626e-16, -1.0, 0.0]
+renderView1.CameraParallelScale = 36.95696649796621
 
-    return (np.array(xx).reshape(s), np.array(yy).reshape(s), np.array(zz).reshape(s),
-            np.array(u).reshape(s), np.array(v).reshape(s), np.array(w).reshape(s))
+renderView1.InteractionMode = '2D'
+renderView1.CameraPosition = [grid_size/2.0, grid_size/2.0, -141.27681186415748]
+renderView1.CameraFocalPoint = [grid_size/2.0, grid_size/2.0, grid_size/2.0]
+renderView1.CameraViewUp = [4.440892098500626e-16, -1.0, 0.0]
+renderView1.CameraParallelScale = 38.581574850542545
 
+# get color transfer function/color map for 'Velocity'
+velocityLUT = GetColorTransferFunction('Velocity')
 
-def read_input_files(dir):
-    pattern = r"fields_(\d+)\.txt"
+# get color legend/bar for velocityLUT in view renderView1
+velocityLUTColorBar = GetScalarBar(velocityLUT, renderView1)
 
-    result = {}
-    for fname in os.listdir(dir):
-        match = re.match(pattern, fname)
-        if match:
-            index = int(match.group(1))  # Extract the index as an integer
-            data = read_3d_input_data(os.path.join(dir, fname))
-            assert index not in result  # not read same file twice
-            result[index] = data
+# change scalar bar placement
+velocityLUTColorBar.WindowLocation = 'Any Location'
+velocityLUTColorBar.Position = [0.8661909009812666, 0.09999999999999998]
+velocityLUTColorBar.ScalarBarLength = 0.3299999999999998
 
-    # Sort the list of tuples based on keys
-    dict_items_sorted = sorted(list(result.items()), key=lambda x: x[0])
+## Set frame
 
-    return [elem[1] for elem in dict_items_sorted]
+animationScene1.AnimationTime = frame_to_render
 
-# interpolates the arrow movement for animation
-# moves the arrow according to the forces and interpolates the new force at the result position
-# does not change or "calculate" any forces, it is just used to visualize the existing force field with movement
-def interpolate_movement_3d(data, xx, yy, zz, x_bound, y_bound, z_bound, time_step, num_slices=100):
-    result = []
-    xx=xx.ravel()
-    yy = yy.ravel()
-    zz = zz.ravel()
-    result.append((xx, yy, zz, np.zeros_like(xx)))  # starting position
+print(f"Saving frame {frame_to_render}.")
 
-    # don't show arrows moving out of bounds
+SaveScreenshot(f"frame_{frame_to_render}.png", viewOrLayout=renderView1, location=16, ImageResolution=[761, 900])
 
-    dt = time_step / num_slices
+if animate:
+    # save animation
+    print(f"Saving animation with {num_frames} frames")
+    SaveAnimation(filename='anim.avi', viewOrLayout=renderView1, location=16, ImageResolution=[1120, 900],
+FrameRate=4, FrameWindow=[0, num_frames])
+    print("Done!")
+    
+Interact()
 
 
-    print("Interpolating movement:")
-    progress_bar = tqdm(total=num_slices * len(data))
-    target_shape = xx.shape
-    assert xx.shape == yy.shape == zz.shape
-    for x, y, z, u, v, w in data:
-        # interpolation of particle forces
-        u_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), u.ravel())
-        v_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), v.ravel())
-        w_interp = scipy.interpolate.LinearNDInterpolator((x.ravel(), y.ravel(), z.ravel()), w.ravel())
-
-        for i in range(num_slices):
-            uu = u_interp((xx, yy, zz))
-            vv = v_interp((xx, yy, zz))
-            ww = w_interp((xx, yy, zz))
-            # move particles in plot
-            xx = xx + uu * dt
-            yy = yy + vv * dt
-            zz = zz + ww * dt
-
-            # stop particles at field bounds when they "hit the wall"
-            xx[xx > x_bound] = x_bound
-            yy[yy > y_bound] = y_bound
-            zz[zz > z_bound] = z_bound
-
-            vals = np.append([uu], np.append([vv], [ww], axis=0), axis=0)
-            speed = np.linalg.norm(vals, axis=0)
-
-            result.append((xx, yy, zz, speed))  # resulting position
-            progress_bar.update(1)
-
-    return result
-def generate_animation_data_3d(data, nth_point, num_slices=100, slice_step=10, movement_factor=0.1):
-
-    result = []
-
-    for x, y, z, u, v, w in data:
-        xx = x[0::nth_point, 0::nth_point, 0::nth_point]
-        yy = y[0::nth_point, 0::nth_point, 0::nth_point]
-        zz = z[0::nth_point, 0::nth_point, 0::nth_point]
-
-        uu = u[0::nth_point, 0::nth_point, 0::nth_point]
-        vv = v[0::nth_point, 0::nth_point, 0::nth_point]
-        ww = w[0::nth_point, 0::nth_point, 0::nth_point]
-
-        for i in range(num_slices):
-            result.append((xx, yy, zz, uu, vv, ww))
-
-    return result
-
-
-# generate a 3D animation
-def plot_3d(data, time_step, frames_per_step, num_particles, outfile):
-    # 3D
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-
-    x = data[0][0]
-    y = data[0][1]
-    z = data[0][2]
-
-    # don't show arrows moving out of bounds
-    xlim = x.max()
-    ylim = y.max()
-    zlim = z.max()
-
-    # take the sample of points to visualize
-    xx = np.random.rand(num_particles) * xlim
-    yy = np.random.rand(num_particles) * ylim
-    zz = np.random.rand(num_particles) * zlim
-
-    anim_data = interpolate_movement_3d(data, xx, yy, zz,xlim,ylim,zlim, time_step, num_slices=frames_per_step)
-
-    def animate(i, plot_data, xlim, ylim, zlim):
-        ax.clear()
-        #x, y, z = plot_data[i]
-        x, y, z, speed = plot_data[i]
-
-        ax.set_xlim([0, xlim])
-        ax.set_ylim([0, ylim])
-        ax.set_zlim([0, zlim])
-
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
-
-        s = ax.scatter(x, y, z, c=speed, cmap='plasma', marker='.')
-        return s,
-
-
-    print("Render Animation:")
-    global progress_bar
-    progress_bar = tqdm(total=len(anim_data))
-
-    time_per_anim_frame = time_step / frames_per_step
-    time_per_anim_frame_ms = (time_step / frames_per_step) * 1000
-    anim_fps = 1.0 / time_per_anim_frame
-
-    print(f"Animation interval: {time_per_anim_frame_ms}")
-    print(f"FPS: {anim_fps}")
-
-    ani = FuncAnimation(fig, animate, interval=time_per_anim_frame_ms, blit=True, repeat=True, frames=len(anim_data),
-                        fargs=[anim_data, xlim, ylim, zlim])
-    ani.save(outfile, dpi=300, writer=HTMLWriter(fps=anim_fps), progress_callback=progress_callback_func)
-
-    progress_bar.close()
-    progress_bar = None
-
-if __name__ == '__main__':
-    main()
+##--------------------------------------------
+## You may need to add some code at the end of this python script depending on your usage, eg:
+#
+## Render all views to see them appears
+# RenderAllViews()
+#
+## Interact with the view, usefull when running from pvpython
+# Interact()
+#
+## Save a screenshot of the active view
+# SaveScreenshot("path/to/screenshot.png")
+#
+## Save a screenshot of a layout (multiple splitted view)
+# SaveScreenshot("path/to/screenshot.png", GetLayout())
+#
+## Save all "Extractors" from the pipeline browser
+# SaveExtracts()
+#
+## Save a animation of the current active view
+# SaveAnimation()
+#
+## Please refer to the documentation of paraview.simple
+## https://www.paraview.org/paraview-docs/latest/python/paraview.simple.html
+##--------------------------------------------
