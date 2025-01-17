@@ -15,10 +15,9 @@ To enable trace logging, pass `-DENABLE_TRACE_LOG=ON` to CMake. (Note, that you 
 ```
 
 ### Visualization runs 
-The visualization script tends to take a while for larger simulations.
-Thus, in order to just try out the simulation, use the call:
+A good size for trying out the simulation and generating data for visualization is 64x64x64 grid cells.
 ```bash
-OMP_NUM_THREADS=8 ./minicfd -d 20 -e 5 -s 0.4
+OMP_NUM_THREADS=8 ./minicfd -d 64 -e 5 -s 0.4
 ```
 
 ### Benchmarking runs
@@ -28,25 +27,15 @@ time OMP_NUM_THREADS=16 ./minicfd -d 100 -e 6 -s 0.4
 ```
 
 ## Visualization
-The `visualize.py` script can visualize the force field with an animation. Refer to `python visualize.py --help` for usage instructions.
-
-### Python environment
-Steps necessary to set up the Python virtual environment for the visualization (or refer to `requirements.txt`):
-```bash
-# setup venv
-python -m venv venv
-source venv/bin/activate
-# install required packages
-pip install --upgrade pip
-pip install numpy scipy matplotlib tqdm
-```
+The `visualize.py` script can be used to render a specific frame of the simulation with [Paraview](https://www.paraview.org/).
+To use it, first install Paraview via your system's package manager.
+See `python visualize.py -h` for available parameters.
 
 ### Run visualization
 ```bash
-python ../visualize.py ./ --frames_per_step 12 --time_step=0.4 --num_particles=1000
+pvpython visualize.py "<simulation_dir>/fields.csv.*" --frame 20 --size 64
 ```
-Make sure to match the `--time_step` parameter to the step size (`-s`) from the simulation call.
-By default, the script outputs a file called `visu.html` and a directory `visu_frames` that contains all the frames.
+Make sure to match the `-size` parameter to the grid size (`-d`) from the simulation call.
 
 ## Tests
 To run the tests, first enable their compilation at configure time by passing `-DBUILD_TESTS=ON` to CMake.
