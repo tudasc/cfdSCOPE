@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv) {
     // Command line parsing
-    cxxopts::Options options("MiniCFD",
+    cxxopts::Options options("cfdSCOPE",
                              "Simple CFD simulation for didactic purposes.");
 
     // clang-format off
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
-    spdlog::info("Welcome to MiniCFD!");
+    spdlog::info("Welcome to cfdSCOPE!");
 
     FileFormat fileFormat{FileFormat::CSV};
     const std::string fileFormatStr = args["output-format"].as<std::string>();

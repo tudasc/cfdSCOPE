@@ -1,4 +1,4 @@
-# MiniCFD
+# cfdSCOPE
 
 ## Build instructions
 ```bash
@@ -11,19 +11,19 @@ To enable trace logging, pass `-DENABLE_TRACE_LOG=ON` to CMake. (Note, that you 
 
 ## Run instructions
 ```bash
-./minicfd -h # print help about command-line arguments
+./cfdscope -h # print help about command-line arguments
 ```
 
 ### Visualization runs 
 A good size for trying out the simulation and generating data for visualization is 64x64x64 grid cells.
 ```bash
-OMP_NUM_THREADS=8 ./minicfd -d 64 -e 5 -s 0.4
+OMP_NUM_THREADS=8 ./cfdscope -d 64 -e 5 -s 0.4
 ```
 
 ### Benchmarking runs
 To conduct performance measurements, use a larger simulation setup:
 ```bash
-time OMP_NUM_THREADS=16 ./minicfd -d 100 -e 6 -s 0.4
+time OMP_NUM_THREADS=16 ./cfdscope -d 100 -e 6 -s 0.4
 ```
 
 ## Visualization

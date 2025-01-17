@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(
-    MiniCFD
+    cfdSCOPE
     VERSION 0.0.1
 )
 
@@ -16,11 +16,11 @@ add_library(simulation
     src/Simulation.cpp
 )
 
-add_executable(minicfd
-    src/MiniCFD.cpp
+add_executable(cfdscope
+    src/cfdSCOPE.cpp
 )
 
-target_link_libraries(minicfd PRIVATE simulation)
+target_link_libraries(cfdscope PRIVATE simulation)
 
 
 # Dependency setup
@@ -37,7 +37,7 @@ FetchContent_Declare(
     GIT_TAG        v3.2.0
 )
 FetchContent_MakeAvailable(cxxopts)
-target_link_libraries(minicfd PRIVATE cxxopts)
+target_link_libraries(cfdscope PRIVATE cxxopts)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -46,7 +46,7 @@ FetchContent_Declare(
     GIT_TAG        v1.13.0
 )
 FetchContent_MakeAvailable(spdlog)
-target_link_libraries(minicfd PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(cfdscope PRIVATE spdlog::spdlog_header_only)
 target_link_libraries(simulation PUBLIC spdlog::spdlog_header_only)
 
 
@@ -56,10 +56,10 @@ option(ENABLE_TRACE_LOG "Print log with level TRACE." OFF)
 option(BUILD_TESTS "Build test suite" OFF)
 
 if(ENABLE_TRACE_LOG)
-    target_compile_definitions(minicfd PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+    target_compile_definitions(cfdscope PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
     target_compile_definitions(simulation PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 else()
-    target_compile_definitions(minicfd PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+    target_compile_definitions(cfdscope PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
     target_compile_definitions(simulation PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 endif()
 
