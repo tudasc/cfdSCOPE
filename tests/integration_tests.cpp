@@ -9,9 +9,9 @@
 
 TEST(IntegrationTests, Simulation) {
     const SimulationConfig cfg = {
-        .width = 10,
-        .height = 10,
-        .depth = 10,
+        .width = 20,
+        .height = 20,
+        .depth = 20,
         .endTime = 1.2,
         .stepSize = 0.3,
         .cellSize = 1.0,
