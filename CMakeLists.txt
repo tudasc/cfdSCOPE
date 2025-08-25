@@ -34,7 +34,7 @@ include(FetchContent)
 FetchContent_Declare(
     cxxopts
     GIT_REPOSITORY https://github.com/jarro2783/cxxopts
-    GIT_TAG        v3.2.0
+    GIT_TAG        v3.3.1
 )
 FetchContent_MakeAvailable(cxxopts)
 target_link_libraries(cfdscope PRIVATE cxxopts)
@@ -43,7 +43,7 @@ include(FetchContent)
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG        v1.13.0
+    GIT_TAG        v1.15.3
 )
 FetchContent_MakeAvailable(spdlog)
 target_link_libraries(cfdscope PRIVATE spdlog::spdlog_header_only)
